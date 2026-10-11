@@ -903,6 +903,365 @@
   background: #e5e7eb;
 }
 
+.dash-map-card {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.dash-map-icon-btn {
+  background: white;
+  border: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  font-size: 15px;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.dash-map-icon-btn:hover {
+  background: #f8fafc;
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.dash-map-recent-banner {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 500;
+  background: rgba(17, 24, 39, 0.88);
+  backdrop-filter: blur(8px);
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  animation: fadeInSlideUp 0.3s ease;
+}
+
+.dash-map-recent-banner i {
+  color: #fbbf24;
+}
+
+@keyframes fadeInSlideUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom Leaflet Pins for Dashboard Map */
+.dash-shop-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.dash-shop-pin {
+  width: 34px;
+  height: 34px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: white;
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.45);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.dash-shop-pin i {
+  transform: rotate(45deg);
+  font-size: 14px;
+}
+
+.dash-shop-pin:hover {
+  transform: rotate(-45deg) scale(1.15);
+  box-shadow: 0 6px 14px rgba(79, 70, 229, 0.65);
+}
+
+.dash-shop-pin--recent {
+  background: linear-gradient(135deg, #059669, #10b981) !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.6) !important;
+  border: 2.5px solid #ffffff !important;
+  z-index: 1000 !important;
+}
+
+.dash-shop-pin--recent .dash-pin-pulse {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border-radius: 50%;
+  border: 2.5px solid #10b981;
+  animation: dashPinPulse 2s infinite ease-out;
+  pointer-events: none;
+}
+
+@keyframes dashPinPulse {
+  0% { transform: scale(0.85); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+/* ─── Shops Under Dashboard Map ─── */
+.dash-shops-container {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 18px 20px;
+}
+
+.dash-shops-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dash-shops-toolbar__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+}
+
+.dash-shops-toolbar__hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.dash-shops-toolbar__search {
+  position: relative;
+  min-width: 260px;
+  max-width: 380px;
+  flex: 1;
+}
+
+.dash-shops-toolbar__search i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.dash-shops-toolbar__search input {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+  background: #f9fafb;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.dash-shops-toolbar__search input:focus {
+  border-color: var(--primary);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px var(--primary-alpha);
+}
+
+.dash-shops-filter-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 14px;
+}
+
+.dash-chip {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: #f3f4f6;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.dash-chip:hover {
+  background: #e5e7eb;
+  color: var(--text);
+}
+
+.dash-chip.is-active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 2px 6px var(--primary-alpha);
+}
+
+.dash-shops-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.dash-shop-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+}
+
+.dash-shop-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.12);
+  transform: translateY(-2px);
+}
+
+.dash-shop-card.is-selected {
+  border-color: var(--primary);
+  background: #f4f6ff;
+  box-shadow: 0 0 0 2px var(--primary), 0 8px 20px rgba(102, 126, 234, 0.18);
+  transform: translateY(-2px);
+}
+
+.dash-shop-card.is-recent {
+  border-left: 4px solid #10b981;
+}
+
+.dash-shop-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.dash-shop-card__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dash-shop-card__icon {
+  font-size: 16px;
+}
+
+.dash-shop-card__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.badge--recent {
+  background: #d1fae5;
+  color: #047857;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #a7f3d0;
+}
+
+.dash-shop-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.dash-shop-card__meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-shop-card__meta-item i {
+  width: 14px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.dash-shop-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.dash-shop-card__action-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #f9fafb;
+  color: var(--primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.dash-shop-card:hover .dash-shop-card__action-btn {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.dash-shop-card.no-gps {
+  opacity: 0.85;
+}
+
+.dash-shop-card.no-gps .dash-shop-card__action-btn {
+  color: #f59e0b;
+  border-color: #fde68a;
+  background: #fefce8;
+}
+
+.dash-shop-card.no-gps:hover .dash-shop-card__action-btn {
+  background: #f59e0b;
+  color: white;
+  border-color: #f59e0b;
+}
+
 /* Leaflet popup styling to match theme */
 .leaflet-popup-content-wrapper {
   border-radius: 10px !important;

@@ -55,8 +55,14 @@ let pendingShopLat = null;
 let pendingShopLng = null;
 
 /** Dashboard map state */
-let dashboardMap     = null;
-let dashboardMarkers = [];
+let dashboardMap          = null;
+let dashboardMarkers      = [];
+let dashboardMarkerMap    = {}; // shopId -> L.marker
+let lastRecentShopId      = null;
+let shouldFocusRecentShop = true; // Focuses on recent shop area on boot or when new shop is added
+let selectedDashShopId    = null;
+let dashShopFilter        = "all"; // 'all' | 'recent' | 'pending' | 'gps'
+let dashShopSearch        = "";
 
 /** Live Tracking map state */
 let trackingMap            = null;
@@ -324,39 +330,87 @@ function initDashboardMap() {
   }).addTo(dashboardMap);
 }
 
+/**
+ * Resolves the most recently added or updated shop.
+ * Checks lastRecentShopId first, then createdAt / updatedAt timestamp, then array order.
+ * @returns {object|null}
+ */
+function getRecentShop() {
+  if (lastRecentShopId) {
+    const s = shops.find((x) => x.id === lastRecentShopId);
+    if (s) return s;
+  }
+  const withTime = [...shops].filter((s) => s.createdAt || s.updatedAt);
+  if (withTime.length > 0) {
+    withTime.sort((a, b) => {
+      const tA = (a.createdAt?.seconds || a.createdAt?._seconds || a.updatedAt?.seconds || 0);
+      const tB = (b.createdAt?.seconds || b.createdAt?._seconds || b.updatedAt?.seconds || 0);
+      return tB - tA;
+    });
+    return withTime[0];
+  }
+  return shops.length > 0 ? shops[shops.length - 1] : null;
+}
+
 function refreshDashboardMapMarkers() {
   if (!dashboardMap) return;
+
   dashboardMarkers.forEach((m) => dashboardMap.removeLayer(m));
   dashboardMarkers = [];
-
-  const countEl = document.getElementById("dashMapCount");
-  if (countEl) {
-    countEl.textContent = `${shops.length} shop${shops.length !== 1 ? "s" : ""}`;
-  }
+  dashboardMarkerMap = {};
 
   const valid = shops.filter((s) => s.latitude && s.longitude);
-  if (valid.length === 0) return;
+  const countEl = document.getElementById("dashMapCount");
+  if (countEl) {
+    countEl.textContent = `${valid.length}/${shops.length} mapped`;
+  }
+
+  const recentShop = getRecentShop();
 
   valid.forEach((s) => {
     const lat = Number(s.latitude);
     const lng = Number(s.longitude);
     const pending = Number(s.pending_fees) || 0;
+    const isRecent = recentShop && s.id === recentShop.id;
 
-    const marker = L.marker([lat, lng]).addTo(dashboardMap);
+    // Create custom pin icon
+    const icon = L.divIcon({
+      className: "dash-shop-marker",
+      html: isRecent
+        ? `<div class="dash-shop-pin dash-shop-pin--recent" title="${esc(s.name)} (Recent)">
+             <div class="dash-pin-pulse"></div>
+             <i class="fa-solid fa-sparkles"></i>
+           </div>`
+        : `<div class="dash-shop-pin" title="${esc(s.name)}">
+             <i class="fa-solid fa-store"></i>
+           </div>`,
+      iconSize: [34, 34],
+      iconAnchor: [17, 34],
+      popupAnchor: [0, -34]
+    });
+
+    const marker = L.marker([lat, lng], {
+      icon,
+      zIndexOffset: isRecent ? 1000 : 0
+    }).addTo(dashboardMap);
 
     marker.bindPopup(`
       <div class="shop-popup__name">
-        🏪 ${esc(s.name)}
+        ${isRecent ? "✨ " : "🏪 "}${esc(s.name)}
+        ${isRecent ? '<span class="badge badge--recent" style="margin-left:6px;font-size:10px;">Recent</span>' : ""}
       </div>
       <div class="shop-popup__row">
-        <i class="fa-solid fa-user"></i> ${esc(s.owner_name) || "—"}
+        <i class="fa-solid fa-tag"></i> <span>${esc(s.shop_type || "Retailer")}</span>
       </div>
       <div class="shop-popup__row">
-        <i class="fa-solid fa-phone"></i> ${esc(s.phone) || "—"}
+        <i class="fa-solid fa-user"></i> <span>${esc(s.owner_name) || "—"}</span>
+      </div>
+      <div class="shop-popup__row">
+        <i class="fa-solid fa-phone"></i> <span>${esc(s.phone) || "—"}</span>
       </div>
       <div class="shop-popup__row">
         <i class="fa-solid fa-location-dot"></i>
-        ${esc(s.address) || "—"}
+        <span>${esc(s.address) || "—"}</span>
       </div>
       <div class="shop-popup__pending ${pending === 0 ? "is-clear" : ""}">
         ${pending > 0
@@ -365,17 +419,209 @@ function refreshDashboardMapMarkers() {
       </div>
       <button class="shop-popup__btn"
               onclick="window.__dashOpenShop('${s.id}')">
-        View Details
+        View in Shops
       </button>
     `);
 
+    marker.on("click", () => {
+      highlightShopCard(s.id, true);
+    });
+
     dashboardMarkers.push(marker);
+    dashboardMarkerMap[s.id] = marker;
   });
 
-  if (dashboardMarkers.length > 0) {
+  // Floating recent shop area reflection banner
+  const recentBanner = document.getElementById("dashMapRecentBadge");
+  const recentBadgeText = document.getElementById("dashMapRecentBadgeText");
+  if (recentBanner && recentBadgeText) {
+    if (recentShop) {
+      recentBadgeText.textContent = `Recent: ${recentShop.name} (${recentShop.address || "Area"})`;
+      recentBanner.style.display = "inline-flex";
+    } else {
+      recentBanner.style.display = "none";
+    }
+  }
+
+  // Camera handling: focus recent shop area if flag is set, otherwise fit bounds
+  if (shouldFocusRecentShop && recentShop && recentShop.latitude && recentShop.longitude) {
+    shouldFocusRecentShop = false;
+    selectedDashShopId = recentShop.id;
+    const rLat = Number(recentShop.latitude);
+    const rLng = Number(recentShop.longitude);
+    dashboardMap.setView([rLat, rLng], 15);
+    const marker = dashboardMarkerMap[recentShop.id];
+    if (marker) {
+      setTimeout(() => marker.openPopup(), 400);
+    }
+  } else if (dashboardMarkers.length > 0 && !selectedDashShopId) {
     const group = L.featureGroup(dashboardMarkers);
     dashboardMap.fitBounds(group.getBounds().pad(0.2));
   }
+
+  renderDashboardShopsList();
+}
+
+/**
+ * Renders the interactive directory of shops situated right under the map.
+ */
+function renderDashboardShopsList() {
+  const container = document.getElementById("dashShopsList");
+  const countEl = document.getElementById("dashShopsCountText");
+  if (!container) return;
+
+  const recentShop = getRecentShop();
+
+  let list = [...shops];
+
+  // Apply search filter
+  if (dashShopSearch) {
+    const q = dashShopSearch.toLowerCase().trim();
+    list = list.filter((s) => {
+      return (
+        (s.name && s.name.toLowerCase().includes(q)) ||
+        (s.address && s.address.toLowerCase().includes(q)) ||
+        (s.owner_name && s.owner_name.toLowerCase().includes(q)) ||
+        (s.phone && s.phone.toLowerCase().includes(q))
+      );
+    });
+  }
+
+  // Apply chip filter
+  if (dashShopFilter === "recent") {
+    if (recentShop) {
+      list = list.filter((s) => s.id === recentShop.id);
+    }
+  } else if (dashShopFilter === "pending") {
+    list = list.filter((s) => (Number(s.pending_fees) || 0) > 0);
+  } else if (dashShopFilter === "gps") {
+    list = list.filter((s) => s.latitude && s.longitude);
+  }
+
+  if (countEl) countEl.textContent = list.length.toString();
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 28px 16px; color: var(--text-muted);">
+        <i class="fa-solid fa-store-slash" style="font-size: 28px; margin-bottom: 8px; display: block; opacity: 0.5;"></i>
+        <div>No matching shops found under map</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = list.map((s) => {
+    const hasGps = Boolean(s.latitude && s.longitude);
+    const isRecent = recentShop && s.id === recentShop.id;
+    const isSelected = selectedDashShopId === s.id;
+    const pending = Number(s.pending_fees) || 0;
+    const typeClass =
+      { Retailer: "badge--retailer", Wholesaler: "badge--wholesaler", Both: "badge--both" }[s.shop_type] ||
+      "badge--retailer";
+
+    return `
+      <div class="dash-shop-card ${isRecent ? "is-recent" : ""} ${isSelected ? "is-selected" : ""} ${hasGps ? "has-gps" : "no-gps"}"
+           data-dash-shop-id="${s.id}">
+        <div class="dash-shop-card__header">
+          <div class="dash-shop-card__title-wrap">
+            <span class="dash-shop-card__icon">${isRecent ? "✨" : (hasGps ? "📍" : "🏪")}</span>
+            <span class="dash-shop-card__name">${esc(s.name)}</span>
+            ${isRecent ? '<span class="badge badge--recent"><i class="fa-solid fa-sparkles"></i> Recent Added</span>' : ""}
+          </div>
+          <span class="badge ${typeClass}">${esc(s.shop_type || "Retailer")}</span>
+        </div>
+
+        <div class="dash-shop-card__body">
+          <div class="dash-shop-card__meta-item" title="Address / Area">
+            <i class="fa-solid fa-location-dot"></i>
+            <span>${esc(s.address) || "No address specified"}</span>
+          </div>
+          ${s.owner_name ? `
+            <div class="dash-shop-card__meta-item" title="Owner">
+              <i class="fa-solid fa-user"></i>
+              <span>${esc(s.owner_name)}</span>
+            </div>` : ""}
+          ${s.phone ? `
+            <div class="dash-shop-card__meta-item" title="Phone">
+              <i class="fa-solid fa-phone"></i>
+              <span>${esc(s.phone)}</span>
+            </div>` : ""}
+        </div>
+
+        <div class="dash-shop-card__footer">
+          <div class="dash-shop-card__due">
+            ${pending > 0
+              ? `<span class="badge badge--danger">₹${pending.toLocaleString("en-IN")} due</span>`
+              : `<span class="badge badge--success">✓ No dues</span>`}
+          </div>
+          <button type="button" class="dash-shop-card__action-btn">
+            ${hasGps
+              ? '<i class="fa-solid fa-location-crosshairs"></i> Locate on Map'
+              : '<i class="fa-solid fa-triangle-exclamation"></i> No GPS'}
+          </button>
+        </div>
+      </div>`;
+  }).join("");
+
+  container.querySelectorAll("[data-dash-shop-id]").forEach((card) => {
+    card.addEventListener("click", () => {
+      const shopId = card.getAttribute("data-dash-shop-id");
+      goToShopOnMap(shopId);
+    });
+  });
+}
+
+/**
+ * Flies the dashboard map to the specified shop and highlights its card.
+ * @param {string} shopId
+ */
+window.goToShopOnMap = function (shopId) {
+  const shop = shops.find((s) => s.id === shopId);
+  if (!shop) return;
+
+  selectedDashShopId = shopId;
+  highlightShopCard(shopId, false);
+
+  if (!shop.latitude || !shop.longitude) {
+    showToast(`"${shop.name}" has no GPS coordinates. Edit in Shops to add location.`, "warning");
+    return;
+  }
+
+  const lat = Number(shop.latitude);
+  const lng = Number(shop.longitude);
+
+  if (dashboardMap) {
+    dashboardMap.flyTo([lat, lng], 16, { duration: 1.0 });
+
+    const marker = dashboardMarkerMap[shopId];
+    if (marker) {
+      setTimeout(() => marker.openPopup(), 400);
+    }
+
+    const mapEl = document.getElementById("dashboardMap");
+    if (mapEl) {
+      mapEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+};
+
+/**
+ * Highlights a shop card in the list under the map.
+ * @param {string} shopId
+ * @param {boolean} scrollIntoView
+ */
+function highlightShopCard(shopId, scrollIntoView = false) {
+  selectedDashShopId = shopId;
+  const cards = document.querySelectorAll(".dash-shop-card");
+  cards.forEach((card) => {
+    if (card.getAttribute("data-dash-shop-id") === shopId) {
+      card.classList.add("is-selected");
+      if (scrollIntoView) {
+        card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    } else {
+      card.classList.remove("is-selected");
+    }
+  });
 }
 
 window.__dashOpenShop = function (shopId) {
@@ -398,11 +644,50 @@ function setupDashboardMapControls() {
   document.getElementById("dashMapCenterBtn")?.addEventListener("click", () => {
     if (!navigator.geolocation || !dashboardMap) return;
     navigator.geolocation.getCurrentPosition((pos) => {
-      dashboardMap.setView([pos.coords.latitude, pos.coords.longitude], 15);
+      dashboardMap.flyTo([pos.coords.latitude, pos.coords.longitude], 15, { duration: 1.0 });
       showToast("Centered on your location", "info");
     }, () => {
       showToast("Could not get your location", "warning");
     }, { enableHighAccuracy: true });
+  });
+
+  document.getElementById("dashMapRecentBtn")?.addEventListener("click", () => {
+    const recent = getRecentShop();
+    if (recent && recent.latitude && recent.longitude) {
+      goToShopOnMap(recent.id);
+      showToast(`Zoomed to recent area: ${recent.name}`, "info");
+    } else if (recent) {
+      showToast(`Recent shop "${recent.name}" has no GPS coordinates`, "warning");
+      highlightShopCard(recent.id, true);
+    } else {
+      showToast("No shops added yet", "warning");
+    }
+  });
+
+  document.getElementById("dashMapFitBtn")?.addEventListener("click", () => {
+    if (dashboardMarkers.length > 0 && dashboardMap) {
+      const group = L.featureGroup(dashboardMarkers);
+      dashboardMap.fitBounds(group.getBounds().pad(0.2));
+      showToast("Fit all shops on map", "info");
+    } else {
+      showToast("No shops with GPS coordinates to fit", "warning");
+    }
+  });
+
+  const searchInput = document.getElementById("dashShopSearchInput");
+  searchInput?.addEventListener("input", (e) => {
+    dashShopSearch = e.target.value;
+    renderDashboardShopsList();
+  });
+
+  document.querySelectorAll(".dash-shops-filter-chips .dash-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".dash-shops-filter-chips .dash-chip")
+        .forEach((c) => c.classList.remove("is-active"));
+      chip.classList.add("is-active");
+      dashShopFilter = chip.getAttribute("data-filter") || "all";
+      renderDashboardShopsList();
+    });
   });
 }
 
@@ -2738,10 +3023,14 @@ function setupShopForm() {
       try {
         if (id) {
           await updateDoc(doc(db, "shops", id), data);
+          lastRecentShopId = id;
+          shouldFocusRecentShop = true;
           showToast("Shop updated", "success");
         } else {
           data.createdAt = serverTimestamp();
-          await addDoc(collection(db, "shops"), data);
+          const docRef = await addDoc(collection(db, "shops"), data);
+          lastRecentShopId = docRef.id;
+          shouldFocusRecentShop = true;
           showToast("Shop added", "success");
         }
         closeModal("shopModal");
