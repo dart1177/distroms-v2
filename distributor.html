@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DistroMS — Distributor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/distributor.css">
+  <!-- PDF export libs (non-module, must be in head before our modules) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar__header">
+        <div class="sidebar__brand">DistroMS</div>
+        <span class="sidebar__role-badge">Distributor</span>
+      </div>
+      <nav class="sidebar__nav">
+        <button type="button" class="nav-item is-active" data-target="dashboard">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Dashboard</span>
+        </button>
+        <button type="button" class="nav-item" data-target="shops">
+          <i class="fa-solid fa-store"></i>
+          <span>Shops</span>
+        </button>
+        <button type="button" class="nav-item" data-target="products">
+          <i class="fa-solid fa-box"></i>
+          <span>Products</span>
+        </button>
+        <button type="button" class="nav-item" disabled>
+          <i class="fa-solid fa-truck"></i>
+          <span>Drivers</span>
+          <span class="nav-item__soon">Soon</span>
+        </button>
+        <!-- Challans: enabled in Session 3A -->
+        <button type="button" class="nav-item" data-target="challans">
+          <i class="fa-solid fa-file-invoice"></i>
+          <span>Challans</span>
+        </button>
+        <button type="button" class="nav-item" disabled>
+          <i class="fa-solid fa-receipt"></i>
+          <span>Sales</span>
+          <span class="nav-item__soon">Soon</span>
+        </button>
+        <button type="button" class="nav-item" disabled>
+          <i class="fa-solid fa-hand-holding-usd"></i>
+          <span>Payments</span>
+          <span class="nav-item__soon">Soon</span>
+        </button>
+        <button type="button" class="nav-item" disabled>
+          <i class="fa-solid fa-chart-bar"></i>
+          <span>Reports</span>
+          <span class="nav-item__soon">Soon</span>
+        </button>
+      </nav>
+      <div class="sidebar__footer">
+        <button type="button" class="btn btn--block" id="logoutBtn">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <span>Sign out</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="top-header">
+        <h1 class="top-header__title" id="pageTitle">Dashboard</h1>
+        <div class="top-header__user" id="userInfo">Hi Admin 👋</div>
+      </header>
+
+      <div class="content-wrapper">
+
+        <!-- SECTION: Dashboard -->
+        <section id="section-dashboard" class="content-section is-active">
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-card__icon"><i class="fa-solid fa-store"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Total Shops</div>
+                <div class="kpi-card__value" id="kpiShops">—</div>
+              </div>
+            </div>
+            <div class="kpi-card kpi-card--warning">
+              <div class="kpi-card__icon"><i class="fa-solid fa-rupee-sign"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Pending Fees</div>
+                <div class="kpi-card__value" id="kpiPending">—</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-card__icon"><i class="fa-solid fa-truck"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Active Deliveries</div>
+                <div class="kpi-card__value" id="kpiActive">—</div>
+              </div>
+            </div>
+            <div class="kpi-card kpi-card--success">
+              <div class="kpi-card__icon"><i class="fa-solid fa-cart-shopping"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Today's Sales</div>
+                <div class="kpi-card__value" id="kpiSales">—</div>
+              </div>
+            </div>
+            <div class="kpi-card kpi-card--warning">
+              <div class="kpi-card__icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Low Stock Items</div>
+                <div class="kpi-card__value" id="kpiLowStock">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="recentActivity">
+            <div class="card__header">
+              <h2 class="card__title">Recent Activity</h2>
+            </div>
+            <div class="empty-state">
+              <div class="empty-state__icon">🕒</div>
+              <div class="empty-state__title">Coming in Session 3</div>
+              <div class="empty-state__text">Activity feed for challans, deliveries, and payments will appear here.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: Shops -->
+        <section id="section-shops" class="content-section">
+          <div class="section-header">
+            <h2>Shops</h2>
+            <button type="button" class="btn btn--primary" id="addShopBtn">
+              <i class="fa-solid fa-plus"></i> Add Shop
+            </button>
+          </div>
+          <div class="card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Owner</th>
+                    <th>Phone</th>
+                    <th>Address</th>
+                    <th>Type</th>
+                    <th>Pending ₹</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="shopsTableBody">
+                  <!-- Injected via js/distributor.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: Products -->
+        <section id="section-products" class="content-section">
+          <div class="section-header">
+            <h2>Products</h2>
+            <button type="button" class="btn btn--primary" id="addProductBtn">
+              <i class="fa-solid fa-plus"></i> Add Product
+            </button>
+          </div>
+          <div class="card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Unit</th>
+                    <th>Cost ₹</th>
+                    <th>Sell ₹</th>
+                    <th>Margin</th>
+                    <th>Stock</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="productsTableBody">
+                  <!-- Injected via js/distributor.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: Challans (Session 3A) -->
+        <section id="section-challans" class="content-section">
+          <div class="section-header">
+            <h2>Delivery Challans</h2>
+            <button type="button" class="btn btn--primary" id="addChallanBtn">
+              <i class="fa-solid fa-plus"></i> New Challan
+            </button>
+          </div>
+          <div class="card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Challan #</th>
+                    <th>Shop</th>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Total ₹</th>
+                    <th>Driver</th>
+                    <th>OTP</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="challansTableBody">
+                  <!-- Injected via js/distributor.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: Add/Edit Shop -->
+  <div id="shopModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal__panel">
+      <div class="modal__header">
+        <h3 id="shopModalTitle">Add Shop</h3>
+        <button type="button" class="modal__close" data-close>&times;</button>
+      </div>
+      <form id="shopForm">
+        <input type="hidden" id="shopId">
+        <div class="field">
+          <label class="field__label" for="shopName">Shop Name *</label>
+          <input class="field__input" id="shopName" required placeholder="e.g. Metro Hardware">
+        </div>
+        <div class="field">
+          <label class="field__label" for="shopOwner">Owner Name</label>
+          <input class="field__input" id="shopOwner" placeholder="e.g. Rajesh Sharma">
+        </div>
+        <div class="field">
+          <label class="field__label" for="shopPhone">Phone</label>
+          <input class="field__input" id="shopPhone" type="tel" placeholder="e.g. 9876543210">
+        </div>
+        <div class="field">
+          <label class="field__label" for="shopAddress">Address</label>
+          <textarea class="field__input" id="shopAddress" rows="2" placeholder="e.g. Shop 12, Main Market"></textarea>
+        </div>
+        <div class="field">
+          <label class="field__label" for="shopType">Shop Type</label>
+          <select class="field__input" id="shopType">
+            <option value="Retailer">Retailer</option>
+            <option value="Wholesaler">Wholesaler</option>
+            <option value="Both">Both</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label" for="shopPending">Opening Pending Fees (₹)</label>
+          <input class="field__input" id="shopPending" type="number" value="0" min="0" step="1">
+        </div>
+        <button class="btn btn--primary btn--block" type="submit">
+          Save Shop
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Add/Edit Product -->
+  <div id="productModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal__panel">
+      <div class="modal__header">
+        <h3 id="productModalTitle">Add Product</h3>
+        <button type="button" class="modal__close" data-close>&times;</button>
+      </div>
+      <form id="productForm">
+        <input type="hidden" id="productId">
+        <div class="field">
+          <label class="field__label" for="productName">Product Name *</label>
+          <input class="field__input" id="productName" required placeholder="e.g. CPVC Pipe 1 inch">
+        </div>
+        <div class="field">
+          <label class="field__label" for="productCategory">Category</label>
+          <select class="field__input" id="productCategory">
+            <option>Pipes &amp; Fittings</option>
+            <option>Electrical</option>
+            <option>Plumbing</option>
+            <option>Tools &amp; Equipment</option>
+            <option>Fasteners &amp; Bolts</option>
+            <option>Paints &amp; Chemicals</option>
+            <option>Sanitary Ware</option>
+            <option>Safety Equipment</option>
+            <option>Other Hardware</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label" for="productUnit">Unit</label>
+          <select class="field__input" id="productUnit">
+            <option value="piece">Per Piece</option>
+            <option value="dozen">Per Dozen</option>
+            <option value="meter">Per Meter</option>
+            <option value="feet">Per Feet</option>
+            <option value="kg">Per KG</option>
+            <option value="litre">Per Litre</option>
+            <option value="box">Per Box</option>
+            <option value="set">Per Set</option>
+            <option value="bundle">Per Bundle</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label" for="productCost">Cost Price / Unit (₹) *</label>
+          <input class="field__input" id="productCost" type="number" min="0" step="0.01" required placeholder="0.00">
+        </div>
+        <div class="field">
+          <label class="field__label" for="productPrice">Selling Price / Unit (₹) *</label>
+          <input class="field__input" id="productPrice" type="number" min="0" step="0.01" required placeholder="0.00">
+        </div>
+        <div class="field">
+          <label class="field__label" for="productStock">Opening Stock</label>
+          <input class="field__input" id="productStock" type="number" min="0" value="0" required>
+        </div>
+        <button class="btn btn--primary btn--block" type="submit">
+          Save Product
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Create Challan (Session 3A) -->
+  <div id="challanModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal__panel">
+      <div class="modal__header">
+        <h3>Create Challan</h3>
+        <button type="button" class="modal__close" data-close>&times;</button>
+      </div>
+      <form id="challanForm">
+        <div class="field">
+          <label class="field__label" for="challanShop">Shop *</label>
+          <select class="field__input" id="challanShop" required>
+            <option value="">— Select shop —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label" for="challanProduct">Product *</label>
+          <select class="field__input" id="challanProduct" required>
+            <option value="">— Select product —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label" for="challanQty">Quantity *</label>
+          <input class="field__input" id="challanQty" type="number" min="1" value="1" required>
+        </div>
+        <div class="field">
+          <label class="field__label" for="challanDriver">Assign Driver *</label>
+          <select class="field__input" id="challanDriver" required>
+            <option value="">— Select driver —</option>
+          </select>
+        </div>
+        <div class="field" id="challanTotalPreview" style="display:none">
+          <label class="field__label">Total</label>
+          <div style="font-size:24px; font-weight:700; color:var(--primary); font-variant-numeric:tabular-nums;">
+            ₹<span id="challanTotalValue">0</span>
+          </div>
+        </div>
+        <button class="btn btn--primary btn--block" type="submit">
+          Create Challan &amp; Generate OTP
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: View Challan (Session 3A) -->
+  <div id="challanViewModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal__panel" style="max-width:560px">
+      <div class="modal__header">
+        <h3>Challan Details</h3>
+        <button type="button" class="modal__close" data-close>&times;</button>
+      </div>
+      <div id="challanViewBody">
+        <!-- Populated by JS -->
+      </div>
+      <div style="display:flex; gap:10px; margin-top:20px;">
+        <button type="button" class="btn btn--primary" id="printChallanBtn" style="flex:1">
+          <i class="fa-solid fa-print"></i> Print
+        </button>
+        <button type="button" class="btn btn--primary" id="downloadChallanPdfBtn" style="flex:1">
+          <i class="fa-solid fa-file-pdf"></i> Download PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts (order matters) -->
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/ui.js"></script>
+  <script type="module" src="js/auth.js"></script>
+  <script type="module" src="js/distributor.js"></script>
+</body>
+</html>

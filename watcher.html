@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DistroMS — Watcher</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+</head>
+<body>
+  <div class="placeholder">
+    <div class="placeholder__inner">
+      <div class="placeholder__emoji">📡</div>
+      <h1 class="placeholder__title" id="whoName">Live Watcher</h1>
+      <p class="placeholder__text">
+        This is where the watcher interface will be built.
+      </p>
+      <button class="btn btn--primary" id="logoutBtn">Sign out</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireRole, logout } from './js/auth.js';
+    import { showToast } from './js/ui.js';
+
+    try {
+      const { profile } = await requireRole('watcher');
+      document.getElementById('whoName').textContent =
+        `Hi ${profile.name || 'Watcher'} 👋`;
+    } catch (e) { /* redirect handled by requireRole */ }
+
+    document.getElementById('logoutBtn')
+      .addEventListener('click', () => {
+        showToast('Signed out', 'info');
+        setTimeout(() => logout(), 200);
+      });
+  </script>
+</body>
+</html>
