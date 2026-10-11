@@ -8,14 +8,31 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/distributor.css">
-  <!-- PDF export libs (non-module, must be in head before our modules) -->
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- PDF libs (non-module globals, must load before our modules) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
+
+  <!-- Test Mode Banner (Hidden by default, shown when role switched) -->
+  <div id="testModeBanner" class="test-mode-banner" style="display:none;">
+    <div class="test-mode-banner__content">
+      <span id="testModeBannerLabel">🧪 Test mode active</span>
+      <button type="button" class="btn btn--return-dist" id="returnToDistributorBtn">
+        Return to Distributor
+      </button>
+    </div>
+  </div>
+
   <div class="layout">
+    <!-- Desktop Sidebar (All 9 Items) -->
     <aside class="sidebar">
       <div class="sidebar__header">
         <div class="sidebar__brand">DistroMS</div>
@@ -34,30 +51,29 @@
           <i class="fa-solid fa-box"></i>
           <span>Products</span>
         </button>
-        <button type="button" class="nav-item" disabled>
+        <button type="button" class="nav-item" data-target="drivers">
           <i class="fa-solid fa-truck"></i>
           <span>Drivers</span>
-          <span class="nav-item__soon">Soon</span>
         </button>
-        <!-- Challans: enabled in Session 3A -->
         <button type="button" class="nav-item" data-target="challans">
           <i class="fa-solid fa-file-invoice"></i>
           <span>Challans</span>
         </button>
-        <button type="button" class="nav-item" disabled>
+        <button type="button" class="nav-item" data-target="sales">
           <i class="fa-solid fa-receipt"></i>
           <span>Sales</span>
-          <span class="nav-item__soon">Soon</span>
         </button>
-        <button type="button" class="nav-item" disabled>
+        <button type="button" class="nav-item" data-target="payments">
           <i class="fa-solid fa-hand-holding-usd"></i>
           <span>Payments</span>
-          <span class="nav-item__soon">Soon</span>
         </button>
-        <button type="button" class="nav-item" disabled>
+        <button type="button" class="nav-item" data-target="reports">
           <i class="fa-solid fa-chart-bar"></i>
           <span>Reports</span>
-          <span class="nav-item__soon">Soon</span>
+        </button>
+        <button type="button" class="nav-item" data-target="tracking">
+          <i class="fa-solid fa-satellite-dish"></i>
+          <span>Live Tracking</span>
         </button>
       </nav>
       <div class="sidebar__footer">
@@ -69,9 +85,14 @@
     </aside>
 
     <main class="main-content">
+      <!-- Clean Top Header with User Info and Mobile Menu Button -->
       <header class="top-header">
         <h1 class="top-header__title" id="pageTitle">Dashboard</h1>
         <div class="top-header__user" id="userInfo">Hi Admin 👋</div>
+        <button type="button" class="top-header__menu-btn"
+                id="mobileMenuBtn" aria-label="Open menu">
+          <i class="fa-solid fa-ellipsis-vertical"></i>
+        </button>
       </header>
 
       <div class="content-wrapper">
@@ -93,26 +114,36 @@
                 <div class="kpi-card__value" id="kpiPending">—</div>
               </div>
             </div>
-            <div class="kpi-card">
+            <div class="kpi-card kpi-card--success">
               <div class="kpi-card__icon"><i class="fa-solid fa-truck"></i></div>
               <div class="kpi-card__body">
                 <div class="kpi-card__label">Active Deliveries</div>
                 <div class="kpi-card__value" id="kpiActive">—</div>
               </div>
             </div>
-            <div class="kpi-card kpi-card--success">
-              <div class="kpi-card__icon"><i class="fa-solid fa-cart-shopping"></i></div>
-              <div class="kpi-card__body">
-                <div class="kpi-card__label">Today's Sales</div>
-                <div class="kpi-card__value" id="kpiSales">—</div>
-              </div>
+          </div>
+
+          <!-- DASHBOARD MAP BOX -->
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card__header" style="display:flex; justify-content:space-between; align-items:center;">
+              <h2 class="card__title">
+                <i class="fa-solid fa-map-location-dot"
+                   style="color:var(--primary);margin-right:6px;"></i>
+                Shops on Map
+              </h2>
+              <span id="dashMapCount" class="badge badge--both">0 shops</span>
             </div>
-            <div class="kpi-card kpi-card--warning">
-              <div class="kpi-card__icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-              <div class="kpi-card__body">
-                <div class="kpi-card__label">Low Stock Items</div>
-                <div class="kpi-card__value" id="kpiLowStock">—</div>
-              </div>
+            <div style="position:relative;">
+              <div id="dashboardMap"
+                   style="width:100%;height:380px;border-radius:0 0 14px 14px;"></div>
+              <button type="button" id="dashMapCenterBtn"
+                      style="position:absolute;top:12px;right:12px;z-index:500;
+                             background:white;border:none;width:40px;height:40px;
+                             border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.15);
+                             cursor:pointer;font-size:16px;color:#1f2937;"
+                      aria-label="Center on my location">
+                <i class="fa-solid fa-crosshairs"></i>
+              </button>
             </div>
           </div>
 
@@ -122,8 +153,8 @@
             </div>
             <div class="empty-state">
               <div class="empty-state__icon">🕒</div>
-              <div class="empty-state__title">Coming in Session 3</div>
-              <div class="empty-state__text">Activity feed for challans, deliveries, and payments will appear here.</div>
+              <div class="empty-state__title">Realtime Operations Feed</div>
+              <div class="empty-state__text">Monitor challans, deliveries, sales, and collections across your distribution network.</div>
             </div>
           </div>
         </section>
@@ -189,7 +220,61 @@
           </div>
         </section>
 
-        <!-- SECTION: Challans (Session 3A) -->
+        <!-- SECTION: Drivers -->
+        <section id="section-drivers" class="content-section">
+          <div class="section-header">
+            <h2>Drivers</h2>
+            <button type="button" class="btn btn--primary" id="addDriverBtn">
+              <i class="fa-solid fa-plus"></i> Add Driver
+            </button>
+          </div>
+
+          <!-- Drivers Stats Row -->
+          <div class="kpi-grid" style="margin-bottom:20px;">
+            <div class="kpi-card">
+              <div class="kpi-card__icon"><i class="fa-solid fa-id-card"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Total Drivers</div>
+                <div class="kpi-card__value" id="statTotalDrivers">0</div>
+              </div>
+            </div>
+            <div class="kpi-card kpi-card--success">
+              <div class="kpi-card__icon"><i class="fa-solid fa-wifi"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Online Now</div>
+                <div class="kpi-card__value" id="statOnlineDrivers">0</div>
+              </div>
+            </div>
+            <div class="kpi-card kpi-card--warning">
+              <div class="kpi-card__icon"><i class="fa-solid fa-route"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Assigned Deliveries</div>
+                <div class="kpi-card__value" id="statAssignedTodayDrivers">0</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Vehicle</th>
+                    <th>Online?</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="driversTableBody">
+                  <!-- Injected via js/distributor.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: Challans -->
         <section id="section-challans" class="content-section">
           <div class="section-header">
             <h2>Delivery Challans</h2>
@@ -204,11 +289,9 @@
                   <tr>
                     <th>Challan #</th>
                     <th>Shop</th>
-                    <th>Product</th>
-                    <th>Qty</th>
+                    <th>Items</th>
                     <th>Total ₹</th>
                     <th>Driver</th>
-                    <th>OTP</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -221,9 +304,231 @@
           </div>
         </section>
 
-      </div>
+        <!-- SECTION: Sales -->
+        <section id="section-sales" class="content-section">
+          <div class="section-header">
+            <h2>Sales &amp; Invoices</h2>
+            <button type="button" class="btn btn--primary" id="addSaleBtn">
+              <i class="fa-solid fa-plus"></i> New Sale
+            </button>
+          </div>
+
+          <!-- Sales Stats Row -->
+          <div class="kpi-grid" style="margin-bottom:20px;">
+            <div class="kpi-card">
+              <div class="kpi-card__icon"><i class="fa-solid fa-receipt"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Total Sales (₹)</div>
+                <div class="kpi-card__value" id="statTotalSales">₹0</div>
+              </div>
+            </div>
+            <div class="kpi-card kpi-card--success">
+              <div class="kpi-card__icon"><i class="fa-solid fa-circle-check"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Total Collected (₹)</div>
+                <div class="kpi-card__value" id="statCollectedSales">₹0</div>
+              </div>
+            </div>
+            <div class="kpi-card kpi-card--warning">
+              <div class="kpi-card__icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Pending Dues (₹)</div>
+                <div class="kpi-card__value" id="statPendingSales">₹0</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Invoice #</th>
+                    <th>Shop</th>
+                    <th>Items</th>
+                    <th>Total ₹</th>
+                    <th>Paid ₹</th>
+                    <th>Pending ₹</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="salesTableBody">
+                  <!-- Injected via js/distributor.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: Payments -->
+        <section id="section-payments" class="content-section">
+          <div class="section-header">
+            <h2>Payments &amp; Collections</h2>
+            <button type="button" class="btn btn--primary" id="addPaymentBtn">
+              <i class="fa-solid fa-hand-holding-dollar"></i> Collect Payment
+            </button>
+          </div>
+
+          <!-- Payments Stats Row -->
+          <div class="kpi-grid" style="margin-bottom:20px;">
+            <div class="kpi-card kpi-card--success">
+              <div class="kpi-card__icon"><i class="fa-solid fa-wallet"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Total Collected (All Time)</div>
+                <div class="kpi-card__value" id="statTotalPaymentsCollected">₹0</div>
+              </div>
+            </div>
+            <div class="kpi-card kpi-card--warning">
+              <div class="kpi-card__icon"><i class="fa-solid fa-store"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Pending Across Shops</div>
+                <div class="kpi-card__value" id="statPaymentsPendingAcrossShops">₹0</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Shop</th>
+                    <th>Amount ₹</th>
+                    <th>Method</th>
+                    <th>Note</th>
+                    <th>Collected By</th>
+                    <th>Remaining ₹</th>
+                  </tr>
+                </thead>
+                <tbody id="paymentsTableBody">
+                  <!-- Injected via js/distributor.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: Reports -->
+        <section id="section-reports" class="content-section">
+          <div class="section-header">
+            <h2>Reports &amp; Analytics</h2>
+          </div>
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-card__icon"><i class="fa-solid fa-chart-line"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Total Sales (All Time)</div>
+                <div class="kpi-card__value" id="reportTotalSales">₹0</div>
+              </div>
+            </div>
+            <div class="kpi-card kpi-card--success">
+              <div class="kpi-card__icon"><i class="fa-solid fa-circle-check"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Total Collected</div>
+                <div class="kpi-card__value" id="reportTotalCollected">₹0</div>
+              </div>
+            </div>
+            <div class="kpi-card kpi-card--warning">
+              <div class="kpi-card__icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Total Pending</div>
+                <div class="kpi-card__value" id="reportTotalPending">₹0</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-card__icon"><i class="fa-solid fa-file-invoice"></i></div>
+              <div class="kpi-card__body">
+                <div class="kpi-card__label">Total Challans</div>
+                <div class="kpi-card__value" id="reportTotalChallans">0</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-grid">
+            <div class="card chart-card">
+              <div class="card__header">
+                <h3 class="card__title">Sales Last 7 Days (₹)</h3>
+              </div>
+              <div style="padding:16px; position:relative; min-height:260px;">
+                <canvas id="sales7DaysChart"></canvas>
+              </div>
+            </div>
+            <div class="card chart-card">
+              <div class="card__header">
+                <h3 class="card__title">Top 5 Shops by Pending (₹)</h3>
+              </div>
+              <div style="padding:16px; position:relative; min-height:260px;">
+                <canvas id="topPendingShopsChart"></canvas>
+              </div>
+            </div>
+            <div class="card chart-card">
+              <div class="card__header">
+                <h3 class="card__title">Top 5 Products by Quantity</h3>
+              </div>
+              <div style="padding:16px; position:relative; min-height:260px;">
+                <canvas id="topProductsChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: Live Tracking -->
+        <section id="section-tracking" class="content-section">
+          <div class="section-header">
+            <h2>Live Driver Tracking</h2>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="badge badge--both" id="trackingStatusBadge">
+                <i class="fa-solid fa-satellite-dish"></i> Live GPS Feed
+              </span>
+            </div>
+          </div>
+
+          <div class="tracking-layout">
+            <div class="card tracking-map-card">
+              <div class="card__header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 class="card__title">
+                  <i class="fa-solid fa-map-location-dot" style="color:var(--primary);margin-right:6px;"></i>
+                  Real-time Route &amp; Fleet Map
+                </h3>
+                <span class="muted" style="font-size:12px;">Updates every 10s</span>
+              </div>
+              <div style="position:relative;">
+                <div id="trackingMap" style="width:100%; height:500px;"></div>
+                <button type="button" id="trackingCenterBtn"
+                        style="position:absolute;top:12px;right:12px;z-index:500;
+                               background:white;border:none;width:40px;height:40px;
+                               border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.15);
+                               cursor:pointer;font-size:16px;color:#1f2937;"
+                        aria-label="Fit all drivers">
+                  <i class="fa-solid fa-arrows-to-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="tracking-sidebar">
+              <div class="card">
+                <div class="card__header" style="display:flex; justify-content:space-between; align-items:center;">
+                  <h3 class="card__title">Drivers Fleet</h3>
+                  <span id="activeDriversCount" class="badge badge--success">0 Active</span>
+                </div>
+                <div class="tracking-drivers-list" id="trackingDriversList">
+                  <div class="empty-state" style="padding:30px 10px;">
+                    <div class="empty-state__icon">📡</div>
+                    <div class="empty-state__title">No active drivers</div>
+                    <div class="empty-state__text">Drivers will appear here when their app is open and broadcasting GPS.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div><!-- /.content-wrapper -->
     </main>
-  </div>
+  </div><!-- /.layout -->
 
   <!-- MODAL: Add/Edit Shop -->
   <div id="shopModal" class="modal">
@@ -251,6 +556,27 @@
           <label class="field__label" for="shopAddress">Address</label>
           <textarea class="field__input" id="shopAddress" rows="2" placeholder="e.g. Shop 12, Main Market"></textarea>
         </div>
+
+        <!-- 📍 Location on Map -->
+        <div class="field">
+          <label class="field__label">📍 Location on Map (optional)</label>
+          <div class="shop-location-actions">
+            <button type="button" class="btn" id="openShopMapBtn"
+                    style="background:#eff6ff;color:#2563eb;">
+              <i class="fa-solid fa-map-marker-alt"></i> Pick on Map
+            </button>
+            <button type="button" class="btn" id="useMyLocationBtn"
+                    style="background:#d1fae5;color:#059669;">
+              <i class="fa-solid fa-crosshairs"></i> Use My Location
+            </button>
+          </div>
+          <div class="shop-location-preview" id="shopLocationPreview">
+            No location selected
+          </div>
+          <input type="hidden" id="shopLatitude">
+          <input type="hidden" id="shopLongitude">
+        </div>
+
         <div class="field">
           <label class="field__label" for="shopType">Shop Type</label>
           <select class="field__input" id="shopType">
@@ -263,10 +589,31 @@
           <label class="field__label" for="shopPending">Opening Pending Fees (₹)</label>
           <input class="field__input" id="shopPending" type="number" value="0" min="0" step="1">
         </div>
-        <button class="btn btn--primary btn--block" type="submit">
-          Save Shop
-        </button>
+        <button class="btn btn--primary btn--block" type="submit">Save Shop</button>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Shop Map Picker -->
+  <div id="shopMapModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal__panel" style="max-width:720px">
+      <div class="modal__header">
+        <h3>Pick Shop Location</h3>
+        <button type="button" class="modal__close" data-close>&times;</button>
+      </div>
+      <div class="field">
+        <input class="field__input" id="shopMapSearch"
+               placeholder="Search address or landmark... (Press Enter)">
+      </div>
+      <div id="shopMapPicker"></div>
+      <div class="shop-location-preview" id="shopMapChosen">
+        Click on the map to place the marker
+      </div>
+      <button type="button" class="btn btn--primary btn--block"
+              id="confirmShopLocationBtn" style="margin-top:12px;">
+        <i class="fa-solid fa-check"></i> Confirm Location
+      </button>
     </div>
   </div>
 
@@ -324,17 +671,51 @@
           <label class="field__label" for="productStock">Opening Stock</label>
           <input class="field__input" id="productStock" type="number" min="0" value="0" required>
         </div>
-        <button class="btn btn--primary btn--block" type="submit">
-          Save Product
+        <button class="btn btn--primary btn--block" type="submit">Save Product</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Add Driver -->
+  <div id="driverModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal__panel">
+      <div class="modal__header">
+        <h3>Add Driver</h3>
+        <button type="button" class="modal__close" data-close>&times;</button>
+      </div>
+      <form id="driverForm">
+        <div class="field">
+          <label class="field__label" for="driverNameInput">Full Name *</label>
+          <input class="field__input" id="driverNameInput" required placeholder="e.g. Ramesh Kumar">
+        </div>
+        <div class="field">
+          <label class="field__label" for="driverEmailInput">Email *</label>
+          <input class="field__input" id="driverEmailInput" type="email" required placeholder="e.g. ramesh@distroms.com">
+        </div>
+        <div class="field">
+          <label class="field__label" for="driverPasswordInput">Password *</label>
+          <input class="field__input" id="driverPasswordInput" type="password" required minlength="6" placeholder="Min 6 characters">
+        </div>
+        <div class="field">
+          <label class="field__label" for="driverPhoneInput">Phone *</label>
+          <input class="field__input" id="driverPhoneInput" type="tel" required placeholder="e.g. 9876543210">
+        </div>
+        <div class="field">
+          <label class="field__label" for="driverVehicleInput">Vehicle Number *</label>
+          <input class="field__input" id="driverVehicleInput" required placeholder="e.g. MH-12-AB-1234">
+        </div>
+        <button class="btn btn--primary btn--block" type="submit" id="saveDriverBtn">
+          Create Driver Account
         </button>
       </form>
     </div>
   </div>
 
-  <!-- MODAL: Create Challan (Session 3A) -->
+  <!-- MODAL A: Create Challan (simplified: shop + items only) -->
   <div id="challanModal" class="modal">
     <div class="modal-backdrop"></div>
-    <div class="modal__panel">
+    <div class="modal__panel" style="max-width:640px">
       <div class="modal__header">
         <h3>Create Challan</h3>
         <button type="button" class="modal__close" data-close>&times;</button>
@@ -346,45 +727,68 @@
             <option value="">— Select shop —</option>
           </select>
         </div>
+
         <div class="field">
-          <label class="field__label" for="challanProduct">Product *</label>
-          <select class="field__input" id="challanProduct" required>
-            <option value="">— Select product —</option>
-          </select>
+          <label class="field__label">Items *</label>
+          <div id="challanItems"></div>
+          <button type="button" class="btn" id="addChallanItemBtn"
+                  style="margin-top:8px; background:#eff6ff; color:#2563eb;">
+            <i class="fa-solid fa-plus"></i> Add another item
+          </button>
         </div>
-        <div class="field">
-          <label class="field__label" for="challanQty">Quantity *</label>
-          <input class="field__input" id="challanQty" type="number" min="1" value="1" required>
-        </div>
-        <div class="field">
-          <label class="field__label" for="challanDriver">Assign Driver *</label>
-          <select class="field__input" id="challanDriver" required>
-            <option value="">— Select driver —</option>
-          </select>
-        </div>
-        <div class="field" id="challanTotalPreview" style="display:none">
-          <label class="field__label">Total</label>
-          <div style="font-size:24px; font-weight:700; color:var(--primary); font-variant-numeric:tabular-nums;">
+
+        <div class="field" id="challanTotalPreview">
+          <label class="field__label">Grand Total</label>
+          <div style="font-size:28px; font-weight:800; color:var(--primary); font-variant-numeric:tabular-nums;">
             ₹<span id="challanTotalValue">0</span>
           </div>
         </div>
+
         <button class="btn btn--primary btn--block" type="submit">
-          Create Challan &amp; Generate OTP
+          Create Challan
         </button>
+        <div style="font-size:12px; color:var(--text-muted); text-align:center; margin-top:8px;">
+          Driver can be assigned later from the challans list.
+        </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL: View Challan (Session 3A) -->
+  <!-- MODAL B: Assign Driver -->
+  <div id="assignDriverModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal__panel" style="max-width:420px">
+      <div class="modal__header">
+        <h3>Assign Driver</h3>
+        <button type="button" class="modal__close" data-close>&times;</button>
+      </div>
+      <form id="assignDriverForm">
+        <input type="hidden" id="assignChallanId">
+        <div class="field">
+          <label class="field__label">Challan</label>
+          <div id="assignChallanLabel" style="font-weight:600; padding:8px 0;"></div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="assignDriverSelect">Driver *</label>
+          <select class="field__input" id="assignDriverSelect" required>
+            <option value="">— Select driver —</option>
+          </select>
+        </div>
+        <button class="btn btn--primary btn--block" type="submit">Assign Driver</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL C: View Challan -->
   <div id="challanViewModal" class="modal">
     <div class="modal-backdrop"></div>
-    <div class="modal__panel" style="max-width:560px">
+    <div class="modal__panel" style="max-width:620px">
       <div class="modal__header">
-        <h3>Challan Details</h3>
+        <h3>Challan</h3>
         <button type="button" class="modal__close" data-close>&times;</button>
       </div>
       <div id="challanViewBody">
-        <!-- Populated by JS -->
+        <!-- Populated by viewChallan() in js/distributor.js -->
       </div>
       <div style="display:flex; gap:10px; margin-top:20px;">
         <button type="button" class="btn btn--primary" id="printChallanBtn" style="flex:1">
@@ -397,7 +801,219 @@
     </div>
   </div>
 
-  <!-- Scripts (order matters) -->
+  <!-- MODAL: New Sale -->
+  <div id="saleModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal__panel" style="max-width:680px">
+      <div class="modal__header">
+        <h3>New Direct Sale</h3>
+        <button type="button" class="modal__close" data-close>&times;</button>
+      </div>
+      <form id="saleForm">
+        <div class="field">
+          <label class="field__label" for="saleShop">Shop *</label>
+          <select class="field__input" id="saleShop" required>
+            <option value="">— Select shop —</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field__label">Items *</label>
+          <div id="saleItems"></div>
+          <button type="button" class="btn" id="addSaleItemBtn"
+                  style="margin-top:8px; background:#eff6ff; color:#2563eb;">
+            <i class="fa-solid fa-plus"></i> Add another item
+          </button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+          <div class="field">
+            <label class="field__label" for="salePaid">Amount Paid (₹)</label>
+            <input class="field__input" id="salePaid" type="number" min="0" step="1" value="0">
+          </div>
+          <div class="field">
+            <label class="field__label" for="salePaymentMethod">Payment Method</label>
+            <select class="field__input" id="salePaymentMethod">
+              <option value="Cash">Cash</option>
+              <option value="UPI">UPI</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Cheque">Cheque</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="background:#f9fafb; padding:14px; border-radius:10px; border:1px solid var(--border); margin-bottom:16px; display:flex; justify-content:space-around; text-align:center;">
+          <div>
+            <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Grand Total</div>
+            <div style="font-size:22px; font-weight:800; color:var(--primary);">₹<span id="saleTotalValue">0</span></div>
+          </div>
+          <div>
+            <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Pending Due</div>
+            <div style="font-size:22px; font-weight:800; color:var(--danger);">₹<span id="salePendingValue">0</span></div>
+          </div>
+        </div>
+
+        <button class="btn btn--primary btn--block" type="submit" id="saveSaleBtn">
+          Create Sale &amp; Invoice
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: View Invoice -->
+  <div id="saleInvoiceModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal__panel" style="max-width:640px">
+      <div class="modal__header">
+        <h3>Invoice</h3>
+        <button type="button" class="modal__close" data-close>&times;</button>
+      </div>
+      <div id="saleInvoiceBody">
+        <!-- Populated by viewSaleInvoice() -->
+      </div>
+      <div style="display:flex; gap:10px; margin-top:20px;">
+        <button type="button" class="btn btn--primary" id="printInvoiceBtn" style="flex:1">
+          <i class="fa-solid fa-print"></i> Print Invoice
+        </button>
+        <button type="button" class="btn btn--primary" id="downloadInvoicePdfBtn" style="flex:1">
+          <i class="fa-solid fa-file-pdf"></i> Download PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Collect Payment -->
+  <div id="paymentModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal__panel" style="max-width:480px">
+      <div class="modal__header">
+        <h3>Collect Payment</h3>
+        <button type="button" class="modal__close" data-close>&times;</button>
+      </div>
+      <form id="paymentForm">
+        <div class="field">
+          <label class="field__label" for="paymentShop">Select Shop *</label>
+          <select class="field__input" id="paymentShop" required>
+            <option value="">— Select shop —</option>
+          </select>
+        </div>
+
+        <div id="paymentShopPendingDisplay"
+             style="background:#fef3c7; border:1px solid #fde68a; color:#92400e; padding:10px 14px; border-radius:8px; font-weight:600; font-size:13px; margin-bottom:14px; display:none;">
+          Current Pending: ₹<span id="paymentCurrentPendingVal">0</span>
+        </div>
+
+        <div class="field">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label class="field__label" for="paymentAmount" style="margin:0;">Amount (₹) *</label>
+            <button type="button" class="row-btn" id="collectFullBtn" style="background:#eff6ff;color:#2563eb;font-size:11px;padding:3px 8px;">
+              Collect Full
+            </button>
+          </div>
+          <input class="field__input" id="paymentAmount" type="number" min="1" step="1" required placeholder="0">
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="paymentMethodSelect">Payment Method</label>
+          <select class="field__input" id="paymentMethodSelect">
+            <option value="Cash">Cash</option>
+            <option value="UPI">UPI</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="Cheque">Cheque</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="paymentNote">Note / Reference (optional)</label>
+          <input class="field__input" id="paymentNote" placeholder="e.g. Transaction ID, Check #, etc.">
+        </div>
+
+        <button class="btn btn--primary btn--block" type="submit" id="savePaymentBtn">
+          Confirm Payment
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- FIXED ARRIVAL ALERTS CONTAINER -->
+  <div id="arrivalAlertContainer" class="arrival-alerts-container"></div>
+
+  <!-- MOBILE SLIDE-IN MENU (With Role Switcher & Submenu) -->
+  <div id="mobileMenu" class="mobile-menu">
+    <div class="mobile-menu__backdrop"></div>
+    <aside class="mobile-menu__panel">
+      <div class="mobile-menu__header">
+        <div>
+          <div class="mobile-menu__name" id="menuUserName">—</div>
+          <div class="mobile-menu__email" id="menuUserEmail">—</div>
+        </div>
+        <button type="button" class="mobile-menu__close"
+                id="mobileMenuClose" aria-label="Close menu">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="mobile-menu__body">
+        <!-- ROLE SWITCHER (Admin Testing Convenience) -->
+        <div class="mobile-menu__section-title">VIEW AS (ROLE SWITCHER)</div>
+        <button type="button" class="mobile-menu__item is-selected-role" id="menuViewDistributor">
+          <i class="fa-solid fa-user-shield"></i>
+          <span>Distributor (Current)</span>
+          <i class="fa-solid fa-check" style="margin-left:auto;color:var(--success);"></i>
+        </button>
+        <button type="button" class="mobile-menu__item" id="menuViewWatcher">
+          <i class="fa-solid fa-satellite-dish"></i>
+          <span>Watcher Dashboard</span>
+        </button>
+        <div class="mobile-menu__driver-switcher">
+          <button type="button" class="mobile-menu__item" id="menuViewDriverBtn">
+            <i class="fa-solid fa-truck"></i>
+            <span>Driver...</span>
+            <i class="fa-solid fa-chevron-down" id="menuDriverCaret" style="margin-left:auto;font-size:12px;"></i>
+          </button>
+          <div class="mobile-menu__driver-sublist" id="menuDriverSublist" style="display:none;">
+            <!-- Populated dynamically with active drivers -->
+            <div style="padding:8px 16px;font-size:12px;color:var(--text-muted);">Loading drivers...</div>
+          </div>
+        </div>
+
+        <div class="mobile-menu__divider"></div>
+
+        <!-- NAVIGATION LINKS -->
+        <div class="mobile-menu__section-title">NAVIGATION</div>
+        <button type="button" class="mobile-menu__item" data-mobile-nav="drivers">
+          <i class="fa-solid fa-truck"></i>
+          <span>Drivers</span>
+        </button>
+        <button type="button" class="mobile-menu__item" data-mobile-nav="sales">
+          <i class="fa-solid fa-receipt"></i>
+          <span>Sales</span>
+        </button>
+        <button type="button" class="mobile-menu__item" data-mobile-nav="payments">
+          <i class="fa-solid fa-hand-holding-usd"></i>
+          <span>Payments</span>
+        </button>
+        <button type="button" class="mobile-menu__item" data-mobile-nav="reports">
+          <i class="fa-solid fa-chart-bar"></i>
+          <span>Reports</span>
+        </button>
+        <button type="button" class="mobile-menu__item" data-mobile-nav="tracking">
+          <i class="fa-solid fa-satellite-dish"></i>
+          <span>Live Tracking</span>
+        </button>
+
+        <div class="mobile-menu__divider"></div>
+
+        <!-- SIGN OUT -->
+        <button type="button" class="mobile-menu__item" id="mobileMenuSignOut">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <span>Sign out</span>
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Scripts -->
   <script type="module" src="js/firebase-config.js"></script>
   <script type="module" src="js/ui.js"></script>
   <script type="module" src="js/auth.js"></script>

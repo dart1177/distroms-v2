@@ -1,0 +1,251 @@
+:root {
+  --theme-color: #059669;
+  --theme-color-dark: #047857;
+  --theme-bg: #d1fae5;
+}
+
+body {
+  background: var(--bg);
+  padding-bottom: 70px; /* space for bottom nav if used */
+}
+
+/* ── Test Mode Banner (Admin impersonation) ── */
+.test-mode-banner {
+  background: #fef3c7;
+  border-bottom: 2px solid #f59e0b;
+  color: #92400e;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+.test-mode-banner__content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.btn--return-dist {
+  background: #b45309;
+  color: white;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.btn--return-dist:hover {
+  background: #78350f;
+}
+
+/* App bar */
+.driver-app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: white;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-md);
+}
+.driver-app-bar__title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Online / Offline Toggle Button in App Bar */
+.gps-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.22);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: all 0.15s ease;
+}
+.gps-toggle-btn:active {
+  transform: scale(0.96);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9ca3af;
+}
+.status-dot.is-online {
+  background: #86efac;
+  box-shadow: 0 0 6px #86efac;
+}
+
+/* Summary card */
+.driver-summary {
+  background: white;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.driver-summary__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.driver-summary__count {
+  font-size: 15px;
+  font-weight: 600;
+}
+.driver-summary__meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.driver-summary__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.driver-summary__actions .btn { flex: 1; min-height: 44px; }
+
+/* Map container */
+#driverMap {
+  width: 100%;
+  height: 280px;
+  background: #e5e7eb;
+  border-radius: 12px;
+  margin: 0 12px 12px;
+  overflow: hidden;
+}
+
+/* Delivery cards */
+.delivery-list {
+  padding: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.delivery-card {
+  background: white;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+  border-left: 4px solid var(--theme-color);
+}
+.delivery-card.status-assigned  { border-left-color: #3b82f6; }
+.delivery-card.status-transit   { border-left-color: #f59e0b; }
+.delivery-card.status-delivered { border-left-color: #059669; }
+
+.delivery-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.delivery-card__stop-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--theme-color);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+  margin-right: 10px;
+}
+.delivery-card__shop {
+  font-size: 16px;
+  font-weight: 700;
+  flex: 1;
+  line-height: 1.2;
+}
+.delivery-card__meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.delivery-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.delivery-card__actions .btn {
+  flex: 1;
+  min-height: 44px;
+  font-size: 14px;
+}
+
+/* PoD modal — reused from distributor pattern */
+.pod-actions-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.received-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.received-toggle button {
+  padding: 14px 12px;
+  border: 2px solid var(--border);
+  background: white;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 52px;
+}
+.received-toggle button.is-selected[data-value="true"] {
+  background: #d1fae5;
+  border-color: #059669;
+  color: #047857;
+}
+.received-toggle button.is-selected[data-value="false"] {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #b91c1c;
+}
+
+.photo-preview {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-top: 8px;
+  display: none;
+}
+.photo-preview.is-visible { display: block; }
+
+/* Empty state */
+.driver-empty {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.driver-empty i { font-size: 48px; opacity: 0.4; margin-bottom: 12px; display: block; }
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+  #driverMap { height: 220px; }
+  .delivery-card__shop { font-size: 15px; }
+}

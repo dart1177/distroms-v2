@@ -2,40 +2,154 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>DistroMS — Driver</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/driver.css">
 </head>
 <body>
-  <div class="placeholder">
-    <div class="placeholder__inner">
-      <div class="placeholder__emoji">🚚</div>
-      <h1 class="placeholder__title" id="whoName">Driver App</h1>
-      <p class="placeholder__text">
-        This is where the driver interface will be built.
-      </p>
-      <button class="btn btn--primary" id="logoutBtn">Sign out</button>
+
+  <!-- Test Mode Banner (When impersonating driver from distributor) -->
+  <div id="testModeBanner" class="test-mode-banner" style="display:none;">
+    <div class="test-mode-banner__content">
+      <span id="testModeBannerLabel">🧪 Test mode: viewing as Driver</span>
+      <button type="button" class="btn btn--return-dist" id="returnToDistributorBtn">
+        Return to Distributor
+      </button>
     </div>
   </div>
 
-  <script type="module">
-    import { requireRole, logout } from './js/auth.js';
-    import { showToast } from './js/ui.js';
+  <!-- App Bar -->
+  <header class="driver-app-bar">
+    <div>
+      <div class="driver-app-bar__title" id="driverName">Loading…</div>
+      <button type="button" class="gps-toggle-btn" id="gpsToggleBtn" aria-label="Toggle broadcast">
+        <span class="status-dot is-online" id="statusDot"></span>
+        <span id="statusText">Online</span>
+      </button>
+    </div>
+    <button class="voice-btn" id="logoutBtn"
+            style="background:rgba(255,255,255,0.2);color:white;border:none;"
+            aria-label="Sign out">
+      <i class="fa-solid fa-arrow-right-from-bracket"></i>
+    </button>
+  </header>
 
-    try {
-      const { profile } = await requireRole('driver');
-      document.getElementById('whoName').textContent =
-        `Hi ${profile.name || 'Driver'} 👋`;
-    } catch (e) { /* redirect handled by requireRole */ }
+  <!-- Summary -->
+  <div class="driver-summary">
+    <div class="driver-summary__row">
+      <div>
+        <div class="driver-summary__count" id="todayCount">0 deliveries today</div>
+        <div class="driver-summary__meta" id="todayMeta">Tap Start Route to begin</div>
+      </div>
+    </div>
+    <div class="driver-summary__actions">
+      <button class="btn btn--primary" id="startRouteBtn">
+        <i class="fa-solid fa-play"></i> Start Route
+      </button>
+    </div>
+  </div>
 
-    document.getElementById('logoutBtn')
-      .addEventListener('click', () => {
-        showToast('Signed out', 'info');
-        setTimeout(() => logout(), 200);
-      });
-  </script>
+  <!-- Map -->
+  <div id="driverMap"></div>
+
+  <!-- Deliveries list -->
+  <div class="delivery-list" id="deliveryList">
+    <div class="driver-empty">
+      <i class="fa-solid fa-truck"></i>
+      <div>Loading your deliveries…</div>
+    </div>
+  </div>
+
+  <!-- PoD / Received modal -->
+  <div id="podModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal__panel">
+      <div class="modal__header">
+        <h3 id="podShopName">Complete Delivery</h3>
+        <button type="button" class="modal__close" data-close>&times;</button>
+      </div>
+
+      <form id="podForm">
+        <input type="hidden" id="podChallanId">
+
+        <!-- Received toggle -->
+        <div class="field">
+          <label class="field__label">Delivery Status *</label>
+          <div class="received-toggle" id="receivedToggle">
+            <button type="button" data-value="true"  id="recvYes">
+              <i class="fa-solid fa-check"></i> Received
+            </button>
+            <button type="button" data-value="false" id="recvNo">
+              <i class="fa-solid fa-times"></i> Not received
+            </button>
+          </div>
+        </div>
+
+        <!-- Not-received reason (with voice) -->
+        <div class="field" id="reasonField" style="display:none;">
+          <label class="field__label">Reason *</label>
+          <textarea class="field__input" id="notReceivedReason" rows="2"
+                    placeholder="e.g. Shop closed, refused, wrong items…"></textarea>
+          <div style="display:flex; gap:8px; margin-top:6px; align-items:center;">
+            <button type="button" class="voice-btn" id="voiceNotesBtn">
+              <i class="fa-solid fa-microphone"></i>
+              <span id="voiceNotesLabel">Speak</span>
+            </button>
+            <button type="button" class="voice-btn" id="voiceLangToggle"
+                    style="background:#f3f4f6;color:#4b5563;">
+              <span id="voiceLangLabel">EN</span>
+            </button>
+          </div>
+          <div class="voice-hint" id="voiceHint">Tap Speak to dictate the reason</div>
+        </div>
+
+        <!-- Photo proof -->
+        <div class="field">
+          <label class="field__label">Photo *</label>
+          <input type="file" id="podPhoto" accept="image/*"
+                 capture="environment" style="display:none;">
+          <button type="button" class="btn btn--block"
+                  id="takePhotoBtn"
+                  style="background:#eff6ff;color:#2563eb;min-height:52px;">
+            <i class="fa-solid fa-camera"></i> Take Photo
+          </button>
+          <img id="photoPreview" class="photo-preview" alt="Preview">
+        </div>
+
+        <!-- Notes (optional) -->
+        <div class="field">
+          <label class="field__label">Notes (optional)</label>
+          <textarea class="field__input" id="podNotes" rows="2"
+                    placeholder="Anything to remember"></textarea>
+        </div>
+
+        <!-- Cash collected -->
+        <div class="field" id="cashField">
+          <label class="field__label">Cash Collected (₹)</label>
+          <input class="field__input" id="podCash" type="number"
+                 min="0" value="0" step="1">
+        </div>
+
+        <button class="btn btn--primary btn--block" type="submit"
+                id="podSubmitBtn" style="min-height:52px;">
+          Confirm &amp; Complete
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/ui.js"></script>
+  <script type="module" src="js/auth.js"></script>
+  <script type="module" src="js/driver.js"></script>
 </body>
 </html>

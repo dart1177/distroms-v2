@@ -1,0 +1,340 @@
+/* Watcher Dark Theme Stylesheet */
+:root {
+  --w-bg: #0b0f19;
+  --w-surface: #1e293b;
+  --w-surface-alt: #162032;
+  --w-border: #334155;
+  --w-text: #f8fafc;
+  --w-text-muted: #94a3b8;
+  --w-primary: #38bdf8;
+  --w-success: #10b981;
+  --w-warning: #f59e0b;
+  --w-danger: #ef4444;
+}
+
+body.watcher-body {
+  background: var(--w-bg);
+  color: var(--w-text);
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: var(--font);
+}
+
+/* ── Top Header ── */
+.watcher-header {
+  height: 60px;
+  background: var(--w-surface);
+  border-bottom: 1px solid var(--w-border);
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 50;
+  flex-shrink: 0;
+}
+
+.watcher-header__left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.watcher-header__brand {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--w-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.5px;
+}
+
+.watcher-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.watcher-header__right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.watcher-header__user {
+  font-size: 13px;
+  color: var(--w-text-muted);
+}
+
+.watcher-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--w-border);
+  color: var(--w-text);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+.watcher-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* ── Main Workspace Layout ── */
+.watcher-layout {
+  display: flex;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Left Sidebar (Desktop) ── */
+.watcher-sidebar {
+  width: 360px;
+  background: var(--w-surface);
+  border-right: 1px solid var(--w-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  flex-shrink: 0;
+}
+
+.watcher-sidebar__header {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--w-border);
+}
+
+.watcher-sidebar__title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--w-text);
+  margin-bottom: 12px;
+}
+
+.watcher-sidebar__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.watcher-sidebar__search i {
+  position: absolute;
+  left: 12px;
+  color: var(--w-text-muted);
+  font-size: 13px;
+}
+.watcher-sidebar__search input {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  background: var(--w-surface-alt);
+  border: 1px solid var(--w-border);
+  border-radius: 8px;
+  color: var(--w-text);
+  font-size: 13px;
+  outline: none;
+}
+.watcher-sidebar__search input:focus {
+  border-color: var(--w-primary);
+}
+
+.watcher-driver-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Driver Telemetry Card ── */
+.watcher-card {
+  background: var(--w-surface-alt);
+  border: 1.5px solid var(--w-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.watcher-card:hover {
+  background: #1e2b42;
+  border-color: var(--w-primary);
+  transform: translateY(-1px);
+}
+.watcher-card.is-selected {
+  border-color: var(--w-primary);
+  background: #1e2b42;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+.watcher-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.watcher-card__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--w-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.watcher-card__vehicle {
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--w-text-muted);
+}
+
+.watcher-card__info {
+  font-size: 12px;
+  color: var(--w-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.watcher-card__info span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.watcher-card__info i {
+  width: 14px;
+  text-align: center;
+}
+
+.watcher-card__bottom {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--w-border);
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  color: var(--w-text-muted);
+}
+
+/* ── Fullscreen Map Wrap ── */
+.watcher-map-wrap {
+  flex: 1;
+  position: relative;
+  height: 100%;
+}
+
+#watcherMap {
+  width: 100%;
+  height: 100%;
+  background: #080c14;
+}
+
+.watcher-map-ctrl {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 500;
+  background: var(--w-surface);
+  border: 1px solid var(--w-border);
+  color: var(--w-text);
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.watcher-map-ctrl:hover {
+  background: #334155;
+}
+
+/* Custom Marker Styling for CartoDB Dark Map */
+.watcher-truck-marker {
+  background: transparent;
+  border: none;
+}
+.watcher-pin {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  border: 3px solid #0f172a;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6);
+  transition: transform 0.2s ease;
+}
+.watcher-pin.is-online {
+  background: var(--w-success);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+}
+.watcher-pin.is-idle {
+  background: var(--w-warning);
+}
+.watcher-pin.is-offline {
+  background: var(--w-danger);
+}
+.watcher-pin:hover {
+  transform: scale(1.15);
+}
+
+.watcher-empty {
+  padding: 50px 20px;
+  text-align: center;
+  color: var(--w-text-muted);
+}
+.watcher-empty i {
+  font-size: 36px;
+  opacity: 0.4;
+  margin-bottom: 10px;
+  display: block;
+}
+
+/* Leaflet Dark Popup */
+.watcher-body .leaflet-popup-content-wrapper {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+.watcher-body .leaflet-popup-tip {
+  background: #1e293b !important;
+}
+
+/* ── Mobile Layout ── */
+@media (max-width: 768px) {
+  .watcher-layout {
+    flex-direction: column-reverse;
+  }
+  .watcher-sidebar {
+    width: 100%;
+    max-height: 260px;
+    border-right: none;
+    border-top: 1px solid var(--w-border);
+  }
+  .watcher-header__user {
+    display: none;
+  }
+}

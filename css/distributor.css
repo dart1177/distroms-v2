@@ -320,7 +320,9 @@
 
 /* Badges */
 .badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 3px 9px;
   border-radius: 999px;
   font-size: 11px;
@@ -350,6 +352,21 @@
 .badge--success {
   background: #d1fae5;
   color: #047857;
+}
+
+.badge--warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.badge--idle {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.badge--offline {
+  background: #f3f4f6;
+  color: #6b7280;
 }
 
 /* Row Action Buttons */
@@ -447,91 +464,19 @@
   color: var(--text);
 }
 
-/* Responsive (below 900px) */
-@media (max-width: 900px) {
-  .sidebar {
-    position: fixed;
-    bottom: 0;
-    top: auto;
-    width: 100%;
-    height: 64px;
-    border-right: none;
-    border-top: 1px solid var(--border);
-    flex-direction: row;
-    z-index: 100;
-  }
-
-  .sidebar__header,
-  .sidebar__footer {
-    display: none;
-  }
-
-  .sidebar__nav {
-    display: flex;
-    padding: 0;
-    width: 100%;
-    overflow-x: auto;
-  }
-
-  .nav-item {
-    flex: 1;
-    flex-direction: column;
-    gap: 3px;
-    padding: 8px 4px;
-    font-size: 10px;
-    text-align: center;
-    border-radius: 0;
-    justify-content: center;
-  }
-
-  .nav-item i {
-    font-size: 16px;
-    margin-bottom: 2px;
-  }
-
-  .nav-item__soon {
-    display: none;
-  }
-
-  .main-content {
-    margin-left: 0;
-    padding-bottom: 64px;
-  }
-
-  .content-wrapper {
-    padding: 16px;
-  }
-
-  .top-header {
-    padding: 0 16px;
-    height: 60px;
-  }
-
-  .kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-}
-
-/* ─── Session 3A: Challans ─────────────────────────────────────── */
-
-/* Status badges for challans */
-.badge--pending    { background: #fef3c7; color: #b45309; }
+/* ─── Challans (multi-product) ──────────────────────── */
+.badge--draft      { background: #f3f4f6; color: #4b5563; }
 .badge--assigned   { background: #dbeafe; color: #1d4ed8; }
 .badge--transit    { background: #ffedd5; color: #c2410c; }
 .badge--delivered  { background: #d1fae5; color: #047857; }
 .badge--converted  { background: #ede9fe; color: #7c3aed; }
 
-/* Row view button */
 .row-btn--view {
   background: #f0fdf4;
   color: #15803d;
 }
-.row-btn--view:hover {
-  background: #dcfce7;
-}
+.row-btn--view:hover { background: #dcfce7; }
 
-/* OTP code display chip */
 .otp-code {
   display: inline-block;
   padding: 4px 10px;
@@ -545,10 +490,45 @@
   color: var(--text);
 }
 
-/* Challan view modal — styled document */
-.challan-doc {
-  padding: 4px 0;
+/* ── Item row in Create Challan / Sale modal ── */
+.item-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 80px 30px;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 10px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid var(--border);
 }
+.item-row__select { min-width: 0; }
+.item-row__qty    { min-width: 0; text-align: center; }
+.item-row__price  {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.item-row__remove {
+  background: #fff5f5;
+  color: #dc2626;
+  border: none;
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.item-row__remove:hover { background: #fee2e2; }
+
+/* ── Challan & Invoice document ── */
+.challan-doc { padding: 4px 0; }
 
 .challan-doc__header {
   display: flex;
@@ -566,14 +546,9 @@
   margin-bottom: 2px;
 }
 
-.challan-doc__tagline {
-  font-size: 11px;
-  color: var(--text-muted);
-}
+.challan-doc__tagline { font-size: 11px; color: var(--text-muted); }
 
-.challan-doc__number {
-  text-align: right;
-}
+.challan-doc__number { text-align: right; }
 
 .challan-doc__number-label {
   font-size: 10px;
@@ -589,7 +564,10 @@
   color: var(--text);
 }
 
-.challan-doc__section {
+.challan-doc__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
   margin-bottom: 16px;
 }
 
@@ -603,16 +581,9 @@
 }
 
 .challan-doc__value {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text);
   line-height: 1.5;
-}
-
-.challan-doc__grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
 }
 
 .challan-doc__otp-box {
@@ -666,9 +637,7 @@
 }
 
 .challan-doc__table th:last-child,
-.challan-doc__table td:last-child {
-  text-align: right;
-}
+.challan-doc__table td:last-child { text-align: right; }
 
 .challan-doc__table td {
   padding: 10px 0;
@@ -706,23 +675,694 @@
   text-align: center;
 }
 
-/* Print styles — hide everything except open modal panel */
+/* ── Print ── */
 @media print {
   body * { visibility: hidden; }
   .modal.is-open .modal__panel,
   .modal.is-open .modal__panel * { visibility: visible; }
   .modal.is-open .modal__panel {
     position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    max-width: 100%;
-    box-shadow: none;
-    border-radius: 0;
+    left: 0; top: 0;
+    width: 100%; max-width: 100%;
+    box-shadow: none; border-radius: 0;
   }
   .modal-backdrop,
   .modal__header,
-  #challanViewModal > .modal__panel > div[style*="display:flex"] {
+  #printChallanBtn,
+  #downloadChallanPdfBtn,
+  #printInvoiceBtn,
+  #downloadInvoicePdfBtn { display: none !important; }
+}
+
+/* GPS picker map in shop modal */
+#shopMapPicker {
+  width: 100%;
+  height: 260px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-top: 8px;
+}
+.shop-location-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.shop-location-preview {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  color: var(--text-muted);
+}
+
+/* ─── Test Mode Banner (Admin Role Switcher) ─── */
+.test-mode-banner {
+  background: #fef3c7;
+  border-bottom: 2px solid #f59e0b;
+  color: #92400e;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+.test-mode-banner__content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.btn--return-dist {
+  background: #b45309;
+  color: white;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.btn--return-dist:hover {
+  background: #78350f;
+}
+
+/* ─── Desktop: hide mobile menu button ─── */
+.top-header__menu-btn { display: none; }
+
+/* ─── Mobile menu slide-in with Role Switcher ─── */
+.mobile-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: none;
+  pointer-events: none;
+}
+.mobile-menu.is-open {
+  display: block;
+  pointer-events: auto;
+}
+.mobile-menu__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.mobile-menu.is-open .mobile-menu__backdrop { opacity: 1; }
+.mobile-menu__panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(320px, 85vw);
+  background: var(--surface);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  display: flex;
+  flex-direction: column;
+}
+.mobile-menu.is-open .mobile-menu__panel { transform: translateX(0); }
+.mobile-menu__header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.mobile-menu__name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.mobile-menu__email {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  word-break: break-all;
+}
+.mobile-menu__close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px;
+  flex-shrink: 0;
+}
+.mobile-menu__body {
+  padding: 12px 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.mobile-menu__section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 10px 14px 4px;
+}
+
+.mobile-menu__divider {
+  height: 1px;
+  background: var(--border);
+  margin: 10px 8px;
+}
+
+.mobile-menu__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.mobile-menu__item:hover { background: var(--bg); }
+.mobile-menu__item i {
+  width: 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.mobile-menu__item.is-selected-role {
+  background: rgba(102, 126, 234, 0.08);
+  font-weight: 600;
+}
+.mobile-menu__item.is-selected-role i {
+  color: var(--primary);
+}
+
+.mobile-menu__driver-sublist {
+  background: #f8fafc;
+  border-radius: 8px;
+  margin: 2px 8px 8px 24px;
+  padding: 4px 0;
+  border: 1px solid var(--border);
+}
+.mobile-menu__subitem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  border-radius: 6px;
+  margin: 2px 4px;
+}
+.mobile-menu__subitem:hover {
+  background: #eff6ff;
+  color: var(--primary);
+}
+
+#mobileMenuSignOut { color: var(--danger); }
+#mobileMenuSignOut i { color: var(--danger); }
+
+/* ─── Dashboard map ─── */
+#dashboardMap {
+  width: 100%;
+  height: 380px;
+  z-index: 1;
+  background: #e5e7eb;
+}
+
+/* Leaflet popup styling to match theme */
+.leaflet-popup-content-wrapper {
+  border-radius: 10px !important;
+  box-shadow: var(--shadow-md) !important;
+}
+.leaflet-popup-content {
+  margin: 14px 16px !important;
+  font-family: var(--font) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+.shop-popup__name {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.shop-popup__row {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.shop-popup__row i { width: 14px; text-align: center; }
+.shop-popup__pending {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+.shop-popup__pending.is-clear {
+  background: #d1fae5;
+  color: #047857;
+}
+.shop-popup__btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LIVE TRACKING, ALERTS, CHARTS & REMAINING STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Live Tracking Layout */
+.tracking-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  align-items: start;
+}
+
+.tracking-map-card {
+  position: relative;
+  overflow: hidden;
+}
+
+#trackingMap {
+  width: 100%;
+  height: 500px;
+  z-index: 1;
+  background: #e5e7eb;
+}
+
+.tracking-sidebar .card {
+  max-height: 560px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tracking-drivers-list {
+  padding: 12px;
+  overflow-y: auto;
+  max-height: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Driver Status Card in Live Tracking */
+.driver-status-card {
+  background: #f9fafb;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.driver-status-card:hover {
+  background: #ffffff;
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.driver-status-card.is-selected {
+  background: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-alpha);
+}
+
+.driver-status-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.driver-status-card__name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.driver-status-card__vehicle {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  background: #edf2f7;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.driver-status-card__row {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.driver-status-card__row i {
+  width: 14px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.driver-status-card__target {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.driver-status-card__distance {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Status Indicator Dot */
+.status-dot-sm {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.status-dot-sm.is-online {
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+.status-dot-sm.is-idle {
+  background: #f59e0b;
+}
+.status-dot-sm.is-offline {
+  background: #9ca3af;
+}
+
+/* Custom Driver Truck Marker on Map */
+.driver-truck-marker {
+  background: transparent;
+  border: none;
+}
+.driver-pin {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #059669;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  border: 3px solid #ffffff;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+.driver-pin.is-offline {
+  background: #6b7280;
+}
+.driver-pin:hover {
+  transform: scale(1.15);
+}
+
+/* Small Shop Pin on Tracking Map */
+.shop-pin {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+/* ── Fixed Arrival Alerts Container ── */
+.arrival-alerts-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
+  width: calc(100% - 48px);
+  pointer-events: none;
+}
+
+.arrival-alert {
+  pointer-events: auto;
+  background: #ef4444;
+  border: 2px solid #b91c1c;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  animation: slideInAlert 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #ffffff;
+}
+
+@keyframes slideInAlert {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.arrival-alert__icon {
+  font-size: 24px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.arrival-alert__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.arrival-alert__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.arrival-alert__time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.arrival-alert__close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #ffffff;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0.8;
+}
+.arrival-alert__close:hover {
+  opacity: 1;
+}
+
+/* ── Reports & Chart Cards ── */
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.chart-card {
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card .card__header {
+  padding: 16px 20px;
+}
+
+/* ─── Responsive Media Queries ─── */
+@media (max-width: 900px) {
+  /* CLEAN MOBILE BOTTOM NAV (Section A / Q5): EXACTLY 4 ITEMS ONLY */
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    height: 64px;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    flex-direction: row;
+    z-index: 100;
+  }
+
+  .sidebar__header,
+  .sidebar__footer {
+    display: none;
+  }
+
+  .sidebar__nav {
+    display: flex;
+    padding: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  /* Show ONLY Dashboard, Shops, Products, Challans on mobile bottom nav */
+  .sidebar__nav .nav-item[data-target="drivers"],
+  .sidebar__nav .nav-item[data-target="sales"],
+  .sidebar__nav .nav-item[data-target="payments"],
+  .sidebar__nav .nav-item[data-target="reports"],
+  .sidebar__nav .nav-item[data-target="tracking"] {
     display: none !important;
   }
+
+  .nav-item {
+    flex: 1 1 25%;
+    max-width: 25%;
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px 4px;
+    font-size: 11px;
+    text-align: center;
+    border-radius: 0;
+    justify-content: center;
+  }
+
+  .nav-item i {
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+
+  .nav-item__soon {
+    display: none;
+  }
+
+  .main-content {
+    margin-left: 0;
+    padding-bottom: 74px;
+  }
+
+  .content-wrapper {
+    padding: 16px;
+  }
+
+  .top-header {
+    padding: 0 16px;
+    height: 60px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .tracking-layout {
+    grid-template-columns: 1fr;
+  }
+
+  #trackingMap {
+    height: 340px;
+  }
+
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .top-header__title {
+    font-size: 16px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .top-header__user {
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .top-header__menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 20px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .top-header__menu-btn:active { background: var(--bg); }
+
+  .arrival-alerts-container {
+    bottom: 74px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+
+  #dashboardMap { height: 240px; }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .challan-doc__grid { grid-template-columns: 1fr; }
 }

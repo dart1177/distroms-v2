@@ -2,40 +2,88 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DistroMS — Watcher</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DistroMS — Live Fleet Monitor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/watcher.css">
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
-<body>
-  <div class="placeholder">
-    <div class="placeholder__inner">
-      <div class="placeholder__emoji">📡</div>
-      <h1 class="placeholder__title" id="whoName">Live Watcher</h1>
-      <p class="placeholder__text">
-        This is where the watcher interface will be built.
-      </p>
-      <button class="btn btn--primary" id="logoutBtn">Sign out</button>
+<body class="watcher-body">
+
+  <!-- Test Mode Banner (When impersonated from Distributor) -->
+  <div id="testModeBanner" class="test-mode-banner" style="display:none;">
+    <div class="test-mode-banner__content">
+      <span>🧪 Test mode: viewing as Watcher</span>
+      <button type="button" class="btn btn--return-dist" id="returnToDistributorBtn">
+        Return to Distributor
+      </button>
     </div>
   </div>
 
-  <script type="module">
-    import { requireRole, logout } from './js/auth.js';
-    import { showToast } from './js/ui.js';
+  <!-- Watcher Top Header -->
+  <header class="watcher-header">
+    <div class="watcher-header__left">
+      <div class="watcher-header__brand">
+        <i class="fa-solid fa-satellite-dish" style="color:#10b981;"></i>
+        <span>DistroMS</span>
+      </div>
+      <div class="watcher-badge">
+        <span class="status-dot-sm is-online"></span>
+        <span id="watcherOnlineCount">0</span> drivers online
+      </div>
+    </div>
 
-    try {
-      const { profile } = await requireRole('watcher');
-      document.getElementById('whoName').textContent =
-        `Hi ${profile.name || 'Watcher'} 👋`;
-    } catch (e) { /* redirect handled by requireRole */ }
+    <div class="watcher-header__right">
+      <div class="watcher-header__user" id="watcherUser">Hi Watcher 👋</div>
+      <button type="button" class="watcher-btn" id="logoutBtn" title="Sign out">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        <span>Sign out</span>
+      </button>
+    </div>
+  </header>
 
-    document.getElementById('logoutBtn')
-      .addEventListener('click', () => {
-        showToast('Signed out', 'info');
-        setTimeout(() => logout(), 200);
-      });
-  </script>
+  <!-- Watcher Main Workspace -->
+  <div class="watcher-layout">
+    <!-- Sidebar / Bottom Sheet -->
+    <aside class="watcher-sidebar" id="watcherSidebar">
+      <div class="watcher-sidebar__header">
+        <div class="watcher-sidebar__title">
+          <span>Active Fleet</span>
+          <span class="badge badge--success" id="activeFleetBadge">0 live</span>
+        </div>
+        <div class="watcher-sidebar__search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="driverSearchInput" placeholder="Filter driver or vehicle...">
+        </div>
+      </div>
+
+      <div class="watcher-driver-list" id="watcherDriverList">
+        <div class="watcher-empty">
+          <i class="fa-solid fa-satellite-dish"></i>
+          <div>Connecting to live telemetry...</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Full Screen Map -->
+    <main class="watcher-map-wrap">
+      <div id="watcherMap"></div>
+      <button type="button" id="watcherFitBoundsBtn" class="watcher-map-ctrl" title="Fit all drivers">
+        <i class="fa-solid fa-arrows-to-eye"></i>
+      </button>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/ui.js"></script>
+  <script type="module" src="js/auth.js"></script>
+  <script type="module" src="js/watcher.js"></script>
 </body>
 </html>
