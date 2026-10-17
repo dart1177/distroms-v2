@@ -2,7 +2,10 @@
 .layout {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 .sidebar {
@@ -18,9 +21,12 @@
 
 .main-content {
   flex: 1;
+  min-width: 0;
+  max-width: calc(100vw - 260px);
   margin-left: 260px;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 /* Sidebar Elements */
@@ -146,6 +152,8 @@
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .content-section {
@@ -1596,10 +1604,13 @@
     top: auto;
     width: 100%;
     height: 64px;
+    height: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     border-right: none;
     border-top: 1px solid var(--border);
     flex-direction: row;
     z-index: 100;
+    background: var(--surface);
   }
 
   .sidebar__header,
@@ -1646,11 +1657,16 @@
 
   .main-content {
     margin-left: 0;
-    padding-bottom: 74px;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    min-width: 0;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   .content-wrapper {
-    padding: 16px;
+    padding: 16px 14px;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .top-header {
@@ -1665,6 +1681,7 @@
 
   .tracking-layout {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   #trackingMap {
@@ -1673,6 +1690,7 @@
 
   .chart-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 
@@ -1682,6 +1700,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
+    padding: 0 14px;
   }
   .top-header__title {
     font-size: 16px;
@@ -1694,6 +1713,10 @@
   .top-header__user {
     font-size: 12px;
     flex-shrink: 0;
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .top-header__menu-btn {
     display: inline-flex;
@@ -1712,18 +1735,150 @@
   .top-header__menu-btn:active { background: var(--bg); }
 
   .arrival-alerts-container {
-    bottom: 74px;
+    bottom: calc(74px + env(safe-area-inset-bottom, 0px));
     right: 12px;
     left: 12px;
     width: auto;
   }
 
   #dashboardMap { height: 240px; }
+
+  /* Section header wrapping */
+  .section-header {
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .section-header h2 {
+    font-size: 20px;
+  }
+
+  /* Item row in Challan / Sale modal - multi-row responsive layout */
+  .item-row {
+    grid-template-columns: 1fr 80px auto !important;
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+  .item-row__select {
+    grid-column: 1 / -1;
+    width: 100% !important;
+  }
+  .item-row__qty {
+    width: 100% !important;
+  }
+  .item-row__price {
+    font-size: 12px;
+    text-align: right;
+  }
+
+  /* Dash shops toolbar */
+  .dash-shops-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .dash-shops-toolbar__search {
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  /* Dash shops list */
+  .dash-shops-list {
+    grid-template-columns: 1fr;
+    max-height: 320px;
+  }
+
+  /* Dash map card header */
+  .dash-map-card .card__header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px;
+  }
+
+  .dash-map-card .card__header > div:last-child {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Card headers */
+  .card__header {
+    padding: 14px 16px;
+  }
 }
 
 @media (max-width: 480px) {
-  .kpi-grid { grid-template-columns: 1fr; }
-  .challan-doc__grid { grid-template-columns: 1fr; }
+  .top-header__user { display: none; }
+  .top-header__title { font-size: 15px; }
+  .content-wrapper { padding: 10px 8px; }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    padding: 12px 14px;
+    gap: 12px;
+    border-radius: 10px;
+  }
+  .kpi-card__icon {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+    border-radius: 10px;
+  }
+  .kpi-card__label {
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+  .kpi-card__value {
+    font-size: 18px;
+  }
+
+  .challan-doc__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .challan-doc__number {
+    text-align: left;
+  }
+  .challan-doc__grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .shop-location-actions {
+    flex-direction: column;
+  }
+  .shop-location-actions .btn {
+    width: 100%;
+  }
+
+  #trackingMap { height: 260px; }
+  #dashboardMap { height: 190px; }
+
+  .dash-shops-container { padding: 12px 10px; }
+  .dash-shop-card { padding: 12px; }
+  .chart-card { min-height: 250px; }
+
+  .section-header .btn {
+    font-size: 13px;
+    padding: 8px 12px;
+    min-height: 38px;
+  }
+
+  /* Modal action buttons */
+  .modal__panel [style*="display:flex; gap:10px"] {
+    flex-direction: column;
+    gap: 8px !important;
+  }
+  .modal__panel [style*="display:flex; gap:10px"] .btn {
+    width: 100%;
+  }
 }
 
 /* ── Sleek Dark Map Filter (for free OSM tiles in Live Tracking) ── */
