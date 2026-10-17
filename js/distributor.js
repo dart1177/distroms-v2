@@ -25,6 +25,16 @@ import {
   signOut as secondarySignOut
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
+// Fix for Leaflet's default broken marker icon
+if (typeof L !== "undefined" && L.Icon && L.Icon.Default) {
+  delete L.Icon.Default.prototype._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  });
+}
+
 // ── State ──────────────────────────────────────────────────────────
 let currentUser     = null;
 let currentProfile  = null;
@@ -70,6 +80,8 @@ let trackingDriverMarkers  = {};
 let trackingShopMarkers    = {};
 let trackingRouteLines     = {};
 let selectedTrackingDriver = null;
+let followDriverId         = null;
+let followInterval         = null;
 
 /** Arrival detection */
 const firedAlerts = new Set(); // Key: `${driverId}-${challanId}`
@@ -2510,6 +2522,13 @@ function initTrackingMap() {
       maxZoom: 19,
       attribution: "&copy; OpenStreetMap"
     }).addTo(trackingMap);
+
+    trackingMap.on("dragstart", () => {
+      if (followDriverId) {
+        stopFollowMode();
+        showToast("Follow mode stopped", "info");
+      }
+    });
   } catch (err) {
     console.warn("Tracking map init failed:", err);
   }
@@ -2619,11 +2638,7 @@ function refreshTrackingDriversList() {
       container.querySelectorAll(".driver-status-card").forEach((c) => c.classList.remove("is-selected"));
       card.classList.add("is-selected");
 
-      const loc = driverLocations[driverId];
-      if (loc && loc.lat && loc.lng && trackingMap) {
-        trackingMap.setView([loc.lat, loc.lng], 16);
-        trackingDriverMarkers[driverId]?.openPopup();
-      }
+      zoomToTrackingDriver(driverId);
     });
   });
 }
@@ -2662,30 +2677,47 @@ async function refreshTrackingMap() {
       const lng = Number(loc.lng);
       allBounds.push([lat, lng]);
 
+      // ── Custom Zomato-style icon ──
       const truckIcon = L.divIcon({
-        className: "driver-truck-marker",
-        html: `<div class="driver-pin"><i class="fa-solid fa-truck"></i></div>`,
-        iconSize: [36, 36],
-        iconAnchor: [18, 18]
+        className: "custom-driver-icon",
+        html: `<div class="driver-badge-pin"><i class="fa-solid fa-truck"></i></div>`,
+        iconSize: [42, 42],
+        iconAnchor: [21, 21]
       });
 
       const targetChallan = getDriverTargetChallan(d.id);
       const popupHtml = `
-        <div style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:4px;">
-          🚚 ${esc(d.name)} (${esc(d.vehicleNumber || "")})
+        <div style="font-size:14px; font-weight:700; color:#f8fafc; margin-bottom:4px;">
+          🚚 ${esc(d.name)} ${d.vehicleNumber ? `(${esc(d.vehicleNumber)})` : ""}
         </div>
-        <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">
-          Speed: ${Math.round(loc.speed || 0)} km/h • Heading: ${Math.round(loc.heading || 0)}°
-        </div>
-        <div style="font-size:12px; color:var(--primary); font-weight:600;">
-          Target: ${targetChallan ? esc(targetChallan.shopName) : "No active challan"}
+        <div style="font-size:12px; color:#94a3b8; line-height:1.5;">
+          Status: <strong style="color:#34d399; text-transform:capitalize;">online</strong><br>
+          Speed: <strong>${Math.round(loc.speed || 0)} km/h</strong> • Heading: <strong>${Math.round(loc.heading || 0)}°</strong><br>
+          Target: <strong style="color:#38bdf8;">${targetChallan ? esc(targetChallan.shopName) : "No active challan"}</strong>
         </div>`;
 
       if (trackingDriverMarkers[d.id]) {
-        trackingDriverMarkers[d.id].setLatLng([lat, lng]);
+        // Update existing marker with smooth drift
+        if (trackingDriverMarkers[d.id].slideTo) {
+          trackingDriverMarkers[d.id].slideTo([lat, lng], { duration: 1500 });
+        } else {
+          trackingDriverMarkers[d.id].setLatLng([lat, lng]);
+        }
+        trackingDriverMarkers[d.id].setIcon(truckIcon);
         trackingDriverMarkers[d.id].setPopupContent(popupHtml);
       } else {
-        const marker = L.marker([lat, lng], { icon: truckIcon }).addTo(trackingMap);
+        // Create new marker using DriftMarker
+        let marker;
+        if (typeof DriftMarker !== "undefined") {
+          marker = new DriftMarker([lat, lng], {
+            icon: truckIcon,
+            duration: 1500,
+            keepAtCenter: false
+          });
+        } else {
+          marker = L.marker([lat, lng], { icon: truckIcon });
+        }
+        marker.addTo(trackingMap);
         marker.bindPopup(popupHtml);
         trackingDriverMarkers[d.id] = marker;
       }
@@ -2715,12 +2747,60 @@ async function refreshTrackingMap() {
       }
     }
 
-    if (!selectedTrackingDriver && allBounds.length > 0) {
+    // If following a driver, pan map to them
+    if (followDriverId && driverLocations[followDriverId]) {
+      const d = driverLocations[followDriverId];
+      if (d.lat && d.lng) {
+        trackingMap.panTo([d.lat, d.lng], { animate: true, duration: 1 });
+      }
+    } else if (!selectedTrackingDriver && allBounds.length > 0) {
       trackingMap.fitBounds(allBounds, { padding: [50, 50], maxZoom: 15 });
     }
   } catch (err) {
     console.warn("refreshTrackingMap error:", err);
   }
+}
+
+function zoomToTrackingDriver(driverId) {
+  const loc = driverLocations[driverId];
+  if (!loc || !loc.lat || !loc.lng || !trackingMap) return;
+
+  trackingMap.setView([loc.lat, loc.lng], 16);
+  trackingDriverMarkers[driverId]?.openPopup();
+
+  setFollowMode(driverId);
+}
+
+function setFollowMode(driverId) {
+  followDriverId = driverId;
+
+  let indicator = document.querySelector(".follow-indicator");
+  if (!indicator) {
+    indicator = document.createElement("div");
+    indicator.className = "follow-indicator";
+    const wrap = document.querySelector(".tracking-map-wrap") || document.querySelector(".tracking-map-card");
+    wrap?.appendChild(indicator);
+  }
+
+  const driver = drivers.find((d) => d.id === driverId) || {};
+  const name = driver.name || "Driver";
+
+  indicator.innerHTML = `
+    <i class="fa-solid fa-location-crosshairs"></i>
+    Following: <strong>${esc(name)}</strong>
+    <button id="stopFollowBtn">Stop</button>
+  `;
+  indicator.classList.add("is-active");
+
+  document.getElementById("stopFollowBtn")?.addEventListener("click", () => {
+    stopFollowMode();
+  });
+}
+
+function stopFollowMode() {
+  followDriverId = null;
+  const indicator = document.querySelector(".follow-indicator");
+  if (indicator) indicator.classList.remove("is-active");
 }
 
 async function drawDriverRoute(driverId, lat1, lng1, lat2, lng2) {

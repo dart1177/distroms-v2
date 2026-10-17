@@ -8,6 +8,14 @@ import {
   getDoc
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+// Fix for Leaflet's default broken marker icon
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
 // State
 let currentUser = null;
 let currentProfile = null;
@@ -19,6 +27,9 @@ let drivers = {};
 let challans = [];
 let driverMarkers = {};
 let selectedDriverId = null;
+
+let followDriverId = null;   // Currently followed driver
+let followInterval = null;   // Auto-pan interval
 
 let unsubLocations = null;
 let unsubDrivers = null;
@@ -77,7 +88,7 @@ function setupTestModeBanner() {
 }
 
 /**
- * Initializes the Leaflet map with CartoDB Dark tiles.
+ * Initializes the Leaflet map with OpenStreetMap tiles.
  */
 function initDarkMap() {
   const el = document.getElementById("watcherMap");
@@ -88,11 +99,17 @@ function initDarkMap() {
       zoomControl: true
     }).setView([20.5937, 78.9629], 5);
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      subdomains: "abcd",
-      attribution: "&copy; OpenStreetMap &copy; CARTO"
+      attribution: '&copy; OpenStreetMap'
     }).addTo(map);
+
+    map.on('dragstart', () => {
+      if (followDriverId) {
+        stopFollowMode();
+        showToast('Follow mode stopped', 'info');
+      }
+    });
   } catch (err) {
     console.warn("Dark map init error:", err);
   }
@@ -276,37 +293,55 @@ function renderMapMarkers() {
     const id = loc.driverId || loc.id;
     const status = getDriverStatus(loc);
     const driver = drivers[id] || {};
-    const name = loc.driverName || driver.name || "Driver";
-    const vehicle = driver.vehicleNumber || "";
+    const name = loc.driverName || driver.name || 'Driver';
+    const vehicle = driver.vehicleNumber || '';
     const speed = Math.round(loc.speed || 0);
 
     const targetChallan = challans.find(
-      (c) => c.driverId === id && (c.status === "assigned" || c.status === "out_for_delivery")
+      (c) => c.driverId === id && (c.status === 'assigned' || c.status === 'out_for_delivery')
     );
+
+    // ── Custom Zomato-style icon ──
+    const statusClass = status === 'online' ? '' : `is-${status}`;
+    const icon = L.divIcon({
+      className: 'custom-driver-icon',
+      html: `<div class="driver-badge-pin ${statusClass}"><i class="fa-solid fa-truck"></i></div>`,
+      iconSize: [42, 42],
+      iconAnchor: [21, 21]
+    });
 
     const popupHtml = `
       <div style="font-size:14px; font-weight:700; color:#f8fafc; margin-bottom:4px;">
-        🚚 ${esc(name)} ${vehicle ? `(${esc(vehicle)})` : ""}
+        🚚 ${esc(name)} ${vehicle ? `(${esc(vehicle)})` : ''}
       </div>
       <div style="font-size:12px; color:#94a3b8; line-height:1.5;">
         Status: <strong style="color:${status === 'online' ? '#34d399' : (status === 'idle' ? '#fbbf24' : '#f87171')}; text-transform:capitalize;">${status}</strong><br>
         Speed: <strong>${speed} km/h</strong><br>
-        Target: <strong style="color:#38bdf8;">${targetChallan ? esc(targetChallan.shopName) : "None"}</strong>
+        Target: <strong style="color:#38bdf8;">${targetChallan ? esc(targetChallan.shopName) : 'None'}</strong>
       </div>`;
 
-    const icon = L.divIcon({
-      className: "watcher-truck-marker",
-      html: `<div class="watcher-pin is-${status}"><i class="fa-solid fa-truck"></i></div>`,
-      iconSize: [36, 36],
-      iconAnchor: [18, 18]
-    });
-
     if (driverMarkers[id]) {
-      driverMarkers[id].setLatLng([loc.lat, loc.lng]);
+      // Update existing marker with smooth drift
+      if (driverMarkers[id].slideTo) {
+        driverMarkers[id].slideTo([loc.lat, loc.lng], { duration: 1500 });
+      } else {
+        driverMarkers[id].setLatLng([loc.lat, loc.lng]);
+      }
       driverMarkers[id].setIcon(icon);
       driverMarkers[id].setPopupContent(popupHtml);
     } else {
-      const marker = L.marker([loc.lat, loc.lng], { icon }).addTo(map);
+      // Create new marker using DriftMarker
+      let marker;
+      if (typeof DriftMarker !== 'undefined') {
+        marker = new DriftMarker([loc.lat, loc.lng], {
+          icon: icon,
+          duration: 1500,
+          keepAtCenter: false
+        });
+      } else {
+        marker = L.marker([loc.lat, loc.lng], { icon });
+      }
+      marker.addTo(map);
       marker.bindPopup(popupHtml);
       driverMarkers[id] = marker;
     }
@@ -319,14 +354,60 @@ function renderMapMarkers() {
       delete driverMarkers[id];
     }
   });
+
+  // If following a driver, pan map to them
+  if (followDriverId && driverLocations[followDriverId]) {
+    const d = driverLocations[followDriverId];
+    if (d.lat && d.lng) {
+      map.panTo([d.lat, d.lng], { animate: true, duration: 1 });
+    }
+  }
 }
 
 function zoomToDriver(driverId) {
   const loc = driverLocations[driverId];
-  if (loc && loc.lat && loc.lng && map) {
-    map.setView([loc.lat, loc.lng], 16);
-    driverMarkers[driverId]?.openPopup();
+  if (!loc || !loc.lat || !loc.lng) return;
+
+  // Zoom in
+  map.setView([loc.lat, loc.lng], 16);
+
+  // Open popup
+  driverMarkers[driverId]?.openPopup();
+
+  // Enable follow mode
+  setFollowMode(driverId);
+}
+
+function setFollowMode(driverId) {
+  followDriverId = driverId;
+
+  // Show indicator
+  let indicator = document.querySelector('.follow-indicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.className = 'follow-indicator';
+    document.querySelector('.watcher-map-wrap')?.appendChild(indicator);
   }
+
+  const driver = drivers[driverId] || {};
+  const name = driver.name || 'Driver';
+
+  indicator.innerHTML = `
+    <i class="fa-solid fa-location-crosshairs"></i>
+    Following: <strong>${esc(name)}</strong>
+    <button id="stopFollowBtn">Stop</button>
+  `;
+  indicator.classList.add('is-active');
+
+  document.getElementById('stopFollowBtn')?.addEventListener('click', () => {
+    stopFollowMode();
+  });
+}
+
+function stopFollowMode() {
+  followDriverId = null;
+  const indicator = document.querySelector('.follow-indicator');
+  if (indicator) indicator.classList.remove('is-active');
 }
 
 function fitAllDrivers() {

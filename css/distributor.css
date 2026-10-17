@@ -1725,3 +1725,91 @@
   .kpi-grid { grid-template-columns: 1fr; }
   .challan-doc__grid { grid-template-columns: 1fr; }
 }
+
+/* ── Sleek Dark Map Filter (for free OSM tiles in Live Tracking) ── */
+#trackingMap {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9);
+}
+
+/* ── Premium Driver Marker Icon ── */
+.custom-driver-icon {
+  background: none;
+  border: none;
+}
+
+.driver-badge-pin {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #1e293b;
+  border: 3px solid #38bdf8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 0 4px rgba(56, 189, 248, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #38bdf8;
+  font-size: 18px;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.driver-badge-pin.is-idle {
+  border-color: #f59e0b;
+  color: #f59e0b;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 0 4px rgba(245, 158, 11, 0.15);
+}
+
+.driver-badge-pin.is-offline {
+  border-color: #ef4444;
+  color: #ef4444;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 0 4px rgba(239, 68, 68, 0.15);
+  opacity: 0.7;
+}
+
+.driver-badge-pin:hover {
+  transform: scale(1.1);
+}
+
+/* ── Follow Mode Indicator ── */
+.follow-indicator {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  background: rgba(30, 41, 59, 0.95);
+  color: #38bdf8;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  pointer-events: auto;
+}
+
+.follow-indicator.is-active {
+  display: flex;
+}
+
+.follow-indicator button {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .driver-badge-pin {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+}
